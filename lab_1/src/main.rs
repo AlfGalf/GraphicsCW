@@ -16,8 +16,8 @@ fn main() {
 
     let mut fm = FrameBuffer::new(512, 256);
 
-    draw_line(&mut fm, 0, 0, 10, 20);
-    draw_line(&mut fm, 0, 20, 10, 0);
+    draw_line(&mut fm, 10, 0, 10, 200);
+    draw_line(&mut fm, 400, 0, 400, 200);
 
     draw_line(&mut fm, 40, 30, 20, 20);
     draw_line(&mut fm, 40, 20, 20, 30);

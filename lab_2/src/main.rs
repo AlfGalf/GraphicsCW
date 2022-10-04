@@ -26,30 +26,28 @@ fn main() {
     )
     .map(|mut p| {
         p.apply_transform(&Transform::new(
-            1.0, 0.0, 0.0, 0.0, //1
-            0.0, 0.0, 1.0, -2.7, //2
-            0.0, 1.0, 0.0, 6.0, //3
-            0.0, 0.0, 0.0, 1.0,
+            2.0, 0.0, 0.0, 0.0, //1
+            0.0, 0.0, 2.0, -8.0, //2
+            0.0, 2.0, 0.0, 18.0, //3
+            0.0, 0.0, 0.0, 0.0,
         ));
         p
     }) {
         Err(e) => println!("Error: {}", e),
+
         Ok(p) => {
             for t in p.triangles {
-                let x0 =
-                    p.vertices.get(t.0).unwrap().0 / p.vertices.get(t.0).unwrap().2 * 700. + 512.;
-                let y0 =
-                    p.vertices.get(t.0).unwrap().1 / p.vertices.get(t.0).unwrap().2 * -700. + 256.;
-                let x1 =
-                    p.vertices.get(t.1).unwrap().0 / p.vertices.get(t.1).unwrap().2 * 700. + 512.;
-                let y1 =
-                    p.vertices.get(t.1).unwrap().1 / p.vertices.get(t.1).unwrap().2 * -700. + 256.;
-                let x2 =
-                    p.vertices.get(t.2).unwrap().0 / p.vertices.get(t.2).unwrap().2 * 700. + 512.;
-                let y2 =
-                    p.vertices.get(t.2).unwrap().1 / p.vertices.get(t.2).unwrap().2 * -700. + 256.;
+                let p1 = p.vertices.get(t.0).unwrap();
+                let p2 = p.vertices.get(t.1).unwrap();
+                let p3 = p.vertices.get(t.2).unwrap();
 
-                println!("{}, {}", x0, y0);
+                let x0 = (p1.0 / p1.2) * 700. + 512.;
+                let y0 = (p1.1 / p1.2) * -700. + 256.;
+                let x1 = (p2.0 / p2.2) * 700. + 512.;
+                let y1 = (p2.1 / p2.2) * -700. + 256.;
+                let x2 = (p3.0 / p3.2) * 700. + 512.;
+                let y2 = (p3.1 / p3.2) * -700. + 256.;
+
                 draw_line(&mut fm, x0 as usize, y0 as usize, x1 as usize, y1 as usize);
                 draw_line(&mut fm, x1 as usize, y1 as usize, x2 as usize, y2 as usize);
                 draw_line(&mut fm, x2 as usize, y2 as usize, x0 as usize, y0 as usize);

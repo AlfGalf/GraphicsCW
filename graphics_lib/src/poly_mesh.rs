@@ -87,7 +87,7 @@ impl PolyMesh {
 
                 let mut split_line = line.split(" ");
 
-                Vertex(
+                dbg!(Vertex(
                     split_line
                         .next()
                         .ok_or("Missing vertex (1)")?
@@ -103,7 +103,7 @@ impl PolyMesh {
                         .ok_or("Missing vertex (3)")?
                         .parse()
                         .map_err(|_| "Malformed coordinate")?,
-                )
+                ))
             })
         }
 
