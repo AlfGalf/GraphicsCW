@@ -68,7 +68,6 @@ impl Scene {
                     .filter_map(|o| ray.intersection(o))
                     .next()
                 {
-                    println!("{}", v);
                     fb.plot_pixel(x, y, 1. / (v - 8.0), 0., 0.)
                 }
             }
