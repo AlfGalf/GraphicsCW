@@ -1,5 +1,10 @@
+pub mod camera;
+pub mod color;
 pub mod frame_buffer;
 pub mod line_drawer;
 pub mod poly_mesh;
+pub mod ray;
+pub mod scene;
 pub mod transform;
+pub mod vector;
 pub mod vertex;

@@ -1,15 +1,15 @@
+use crate::ray::Ray;
 use crate::transform::Transform;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 use crate::vertex::Vertex;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Triange(pub usize, pub usize, pub usize);
 
+#[derive(Debug)]
 pub struct PolyMesh {
-    vertexCount: usize,
-    triangelCount: usize,
     pub vertices: Vec<Vertex>,
     pub triangles: Vec<Triange>,
     smoothing: bool,
@@ -30,8 +30,6 @@ impl PolyMesh {
         } else {
             return Err("File empty.");
         }
-
-        println!("first line");
 
         let num_vertices = {
             let vertices_line = lines
@@ -73,12 +71,9 @@ impl PolyMesh {
                 .map_err(|_| "Faces number malformed.")?
         };
 
-        dbg!(num_vertices);
-        dbg!(num_faces);
-
         let mut vertices = Vec::with_capacity(num_vertices as usize);
 
-        for i in 0..num_vertices {
+        for _ in 0..num_vertices {
             vertices.push({
                 let line = lines
                     .next()
@@ -87,7 +82,7 @@ impl PolyMesh {
 
                 let mut split_line = line.split(" ");
 
-                dbg!(Vertex(
+                Vertex(
                     split_line
                         .next()
                         .ok_or("Missing vertex (1)")?
@@ -103,13 +98,13 @@ impl PolyMesh {
                         .ok_or("Missing vertex (3)")?
                         .parse()
                         .map_err(|_| "Malformed coordinate")?,
-                ))
+                )
             })
         }
 
         let mut faces = Vec::with_capacity(num_faces as usize);
 
-        for i in 0..num_faces {
+        for _ in 0..num_faces {
             faces.push({
                 let line = lines
                     .next()
@@ -152,17 +147,73 @@ impl PolyMesh {
         }
 
         Ok(PolyMesh {
-            vertexCount: num_vertices,
-            triangelCount: num_faces,
             vertices,
             triangles: faces,
             smoothing: false,
         })
     }
 
-    pub fn apply_transform(&mut self, tr: &Transform) {
-        for v in self.vertices.iter_mut() {
-            v.apply_transform(tr);
+    pub fn apply_transform(&self, tr: &Transform) -> Self {
+        Self {
+            vertices: self
+                .vertices
+                .iter()
+                .map(|v| v.apply_transform(tr))
+                .collect(),
+            triangles: self.triangles.clone(),
+            smoothing: self.smoothing,
         }
+    }
+
+    pub fn intersections(&self, ray: &Ray) -> Option<f32> {
+        let mut intersections = self
+            .triangles
+            .iter()
+            .filter_map(|t| {
+                let epsilon = 0.000001;
+
+                let p0 = self.vertices.get(t.0).unwrap();
+                let p1 = self.vertices.get(t.1).unwrap();
+                let p2 = self.vertices.get(t.2).unwrap();
+
+                let edge1 = p0.to(p1);
+                let edge2 = p0.to(p2);
+
+                let h = ray.direction.cross(&edge2);
+                let a = edge1.dot(&h);
+
+                if a > -epsilon && a < epsilon {
+                    return None;
+                }
+
+                let f = 1.0 / a;
+
+                let s = p0.to(&ray.position);
+                let u = f * s.dot(&h);
+
+                if u < 0.0 || u > 1.0 {
+                    return None;
+                }
+
+                let q = s.cross(&edge1);
+                let v = f * ray.direction.dot(&q);
+
+                if v < 0.0 || u + v > 1.0 {
+                    return None;
+                }
+
+                let t = f * edge2.dot(&q);
+
+                if t > epsilon {
+                    Some(t)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<f32>>();
+
+        intersections.sort_by(|l, r| l.partial_cmp(r).unwrap());
+
+        intersections.first().map(|f| *f)
     }
 }

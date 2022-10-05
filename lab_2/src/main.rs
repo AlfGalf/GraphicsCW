@@ -1,12 +1,10 @@
 extern crate graphics_lib;
 
 use graphics_lib::frame_buffer::FrameBuffer;
-use std::borrow::Borrow;
 
 use graphics_lib::line_drawer::draw_line;
 use graphics_lib::poly_mesh::PolyMesh;
 use graphics_lib::transform::Transform;
-use graphics_lib::vertex::Vertex;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
@@ -21,7 +19,7 @@ fn main() {
     let mut fm = FrameBuffer::new(1024, 1024);
 
     match PolyMesh::from_file(
-        BufReader::new(File::open("teapot_smaller.ply").unwrap()),
+        BufReader::new(File::open("../../lab_3/teapot_smaller.ply").unwrap()),
         false,
     )
     .map(|mut p| {
