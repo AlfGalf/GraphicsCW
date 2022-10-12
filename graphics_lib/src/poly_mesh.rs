@@ -1,17 +1,36 @@
+use crate::color::Color;
+use crate::hit::Hit;
 use crate::ray::Ray;
-use crate::transform::Transform;
+use glam::{Affine3A, Vec3};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use crate::vertex::Vertex;
-
 #[derive(Debug, Clone)]
-pub struct Triange(pub usize, pub usize, pub usize);
+pub struct Triangle {
+    pub a: Vec3,
+    pub b: Vec3,
+    pub c: Vec3,
+    pub n: Vec3,
+    pub d: f32,
+}
+
+impl Triangle {
+    pub fn new(a: Vec3, b: Vec3, c: Vec3) -> Self {
+        let normal = (c - a).cross(b - a).normalize();
+
+        Triangle {
+            a,
+            b,
+            c,
+            n: normal,
+            d: a.dot(normal),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct PolyMesh {
-    pub vertices: Vec<Vertex>,
-    pub triangles: Vec<Triange>,
+    pub triangles: Vec<Triangle>,
     smoothing: bool,
 }
 
@@ -82,7 +101,7 @@ impl PolyMesh {
 
                 let mut split_line = line.split(" ");
 
-                Vertex(
+                Vec3::new(
                     split_line
                         .next()
                         .ok_or("Missing vertex (1)")?
@@ -126,93 +145,102 @@ impl PolyMesh {
                     return Err("Face does not start with 3.");
                 }
 
-                Triange(
-                    split_line
-                        .next()
-                        .ok_or("Missing face (1)")?
-                        .parse()
-                        .map_err(|_| "Malformed vertex index")?,
-                    split_line
-                        .next()
-                        .ok_or("Missing face (2)")?
-                        .parse()
-                        .map_err(|_| "Malformed vertex index")?,
-                    split_line
-                        .next()
-                        .ok_or("Missing face (3)")?
-                        .parse()
-                        .map_err(|_| "Malformed vertex index")?,
-                )
+                let a: &Vec3 = vertices
+                    .get(
+                        split_line
+                            .next()
+                            .ok_or("Missing face (1)")?
+                            .parse::<usize>()
+                            .map_err(|_| "Malformed vertex index")?,
+                    )
+                    .ok_or("Face uses vertex out of range.")?;
+                let b: &Vec3 = vertices
+                    .get(
+                        split_line
+                            .next()
+                            .ok_or("Missing face (1)")?
+                            .parse::<usize>()
+                            .map_err(|_| "Malformed vertex index")?,
+                    )
+                    .ok_or("Face uses vertex out of range.")?;
+                let c: &Vec3 = vertices
+                    .get(
+                        split_line
+                            .next()
+                            .ok_or("Missing face (1)")?
+                            .parse::<usize>()
+                            .map_err(|_| "Malformed vertex index")?,
+                    )
+                    .ok_or("Face uses vertex out of range.")?;
+
+                Triangle::new(*a, *b, *c)
             })
         }
 
         Ok(PolyMesh {
-            vertices,
             triangles: faces,
             smoothing: false,
         })
     }
 
-    pub fn apply_transform(&self, tr: &Transform) -> Self {
+    pub fn apply_transform(&self, tr: Affine3A) -> Self {
         Self {
-            vertices: self
-                .vertices
+            triangles: self
+                .triangles
                 .iter()
-                .map(|v| v.apply_transform(tr))
+                .map(|t| {
+                    Triangle::new(
+                        tr.transform_point3(t.a),
+                        tr.transform_point3(t.b),
+                        tr.transform_point3(t.c),
+                    )
+                })
                 .collect(),
-            triangles: self.triangles.clone(),
             smoothing: self.smoothing,
         }
     }
 
-    pub fn intersections(&self, ray: &Ray) -> Option<f32> {
+    pub fn intersections(&self, ray: &Ray) -> Option<Hit> {
         let mut intersections = self
             .triangles
             .iter()
-            .filter_map(|t| {
-                let epsilon = 0.000001;
+            .filter_map(|tri| {
+                let epsilon = 0.00001;
 
-                let p0 = self.vertices.get(t.0).unwrap();
-                let p1 = self.vertices.get(t.1).unwrap();
-                let p2 = self.vertices.get(t.2).unwrap();
+                let p0 = tri.a;
+                let p1 = tri.b;
+                let p2 = tri.c;
 
-                let edge1 = p0.to(p1);
-                let edge2 = p0.to(p2);
+                let normal = tri.n;
 
-                let h = ray.direction.cross(&edge2);
-                let a = edge1.dot(&h);
-
-                if a > -epsilon && a < epsilon {
+                if ray.direction.dot(normal).abs() < epsilon {
                     return None;
                 }
 
-                let f = 1.0 / a;
+                let d = tri.d;
 
-                let s = p0.to(&ray.position);
-                let u = f * s.dot(&h);
+                let t = (d - normal.dot(ray.position)) / normal.dot(ray.direction);
 
-                if u < 0.0 || u > 1.0 {
-                    return None;
-                }
+                let p = ray.position + t * ray.direction;
 
-                let q = s.cross(&edge1);
-                let v = f * ray.direction.dot(&q);
+                let v0 = (p - p0).cross(p1 - p0).dot(normal);
+                let v1 = (p - p1).cross(p2 - p1).dot(normal);
+                let v2 = (p - p2).cross(p0 - p2).dot(normal);
 
-                if v < 0.0 || u + v > 1.0 {
-                    return None;
-                }
-
-                let t = f * edge2.dot(&q);
-
-                if t > epsilon {
-                    Some(t)
+                if v0 >= -epsilon && v1 >= -epsilon && v2 >= -epsilon {
+                    Some(Hit::new(p, normal))
                 } else {
                     None
                 }
             })
-            .collect::<Vec<f32>>();
+            .collect::<Vec<Hit>>();
 
-        intersections.sort_by(|l, r| l.partial_cmp(r).unwrap());
+        intersections.sort_by(|l, r| {
+            ray.position
+                .distance(l.pos)
+                .partial_cmp(&ray.position.distance(r.pos))
+                .unwrap()
+        });
 
         intersections.first().map(|f| *f)
     }

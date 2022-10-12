@@ -2,9 +2,9 @@ extern crate graphics_lib;
 
 use graphics_lib::frame_buffer::FrameBuffer;
 
+use glam::Affine3A;
 use graphics_lib::line_drawer::draw_line;
 use graphics_lib::poly_mesh::PolyMesh;
-use graphics_lib::transform::Transform;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
@@ -23,12 +23,12 @@ fn main() {
         false,
     )
     .map(|mut p| {
-        p.apply_transform(&Transform::new(
-            2.0, 0.0, 0.0, 0.0, //1
-            0.0, 0.0, 2.0, -8.0, //2
-            0.0, 2.0, 0.0, 18.0, //3
-            0.0, 0.0, 0.0, 0.0,
-        ));
+        p.apply_transform(Affine3A::from_cols_array(&[
+            2.0, 0.0, 0.0, //0.0, //1
+            0.0, 0.0, 2.0, //-8.0, //2
+            0.0, 2.0, 0.0, //18.0, //3
+            0.0, -8.0, 18.0, //0.0,
+        ]));
         p
     }) {
         Err(e) => println!("Error: {}", e),
@@ -39,12 +39,12 @@ fn main() {
                 let p2 = p.vertices.get(t.1).unwrap();
                 let p3 = p.vertices.get(t.2).unwrap();
 
-                let x0 = (p1.0 / p1.2) * 700. + 512.;
-                let y0 = (p1.1 / p1.2) * -700. + 256.;
-                let x1 = (p2.0 / p2.2) * 700. + 512.;
-                let y1 = (p2.1 / p2.2) * -700. + 256.;
-                let x2 = (p3.0 / p3.2) * 700. + 512.;
-                let y2 = (p3.1 / p3.2) * -700. + 256.;
+                let x0 = (p1.x / p1.z) * 700. + 512.;
+                let y0 = (p1.y / p1.z) * -700. + 256.;
+                let x1 = (p2.x / p2.z) * 700. + 512.;
+                let y1 = (p2.y / p2.z) * -700. + 256.;
+                let x2 = (p3.x / p3.z) * 700. + 512.;
+                let y2 = (p3.y / p3.z) * -700. + 256.;
 
                 draw_line(&mut fm, x0 as usize, y0 as usize, x1 as usize, y1 as usize);
                 draw_line(&mut fm, x1 as usize, y1 as usize, x2 as usize, y2 as usize);

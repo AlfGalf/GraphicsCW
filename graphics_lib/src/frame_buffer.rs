@@ -1,18 +1,27 @@
 #[derive(Clone, Debug)]
 pub struct Pixel {
-    red: f32,
-    green: f32,
-    blue: f32,
-    depth: f32,
+    pub red: f32,
+    pub green: f32,
+    pub blue: f32,
+    pub depth: f32,
 }
 
 impl Pixel {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Pixel {
             red: 0.,
             green: 0.,
             blue: 0.,
             depth: 0.,
+        }
+    }
+
+    pub fn from_colors(r: f32, g: f32, b: f32, d: f32) -> Self {
+        Pixel {
+            red: r,
+            green: g,
+            blue: b,
+            depth: d,
         }
     }
 }
