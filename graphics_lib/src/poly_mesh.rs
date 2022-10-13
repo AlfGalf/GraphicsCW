@@ -1,5 +1,6 @@
-use crate::color::Color;
 use crate::hit::Hit;
+use crate::material::Material;
+use crate::object::Object;
 use crate::ray::Ray;
 use glam::{Affine3A, Vec3};
 use std::fs::File;
@@ -29,13 +30,18 @@ impl Triangle {
 }
 
 #[derive(Debug)]
-pub struct PolyMesh {
+pub struct PolyMesh<M: Material> {
     pub triangles: Vec<Triangle>,
     smoothing: bool,
+    material: M,
 }
 
-impl PolyMesh {
-    pub fn from_file(file: BufReader<File>, smooth: bool) -> Result<PolyMesh, &'static str> {
+impl<M: Material> PolyMesh<M> {
+    pub fn from_file(
+        file: BufReader<File>,
+        material: M,
+        smooth: bool,
+    ) -> Result<PolyMesh<M>, &'static str> {
         let mut lines = file.lines();
 
         if let Some(first) = lines.next() {
@@ -180,27 +186,13 @@ impl PolyMesh {
         Ok(PolyMesh {
             triangles: faces,
             smoothing: false,
+            material,
         })
     }
+}
 
-    pub fn apply_transform(&self, tr: Affine3A) -> Self {
-        Self {
-            triangles: self
-                .triangles
-                .iter()
-                .map(|t| {
-                    Triangle::new(
-                        tr.transform_point3(t.a),
-                        tr.transform_point3(t.b),
-                        tr.transform_point3(t.c),
-                    )
-                })
-                .collect(),
-            smoothing: self.smoothing,
-        }
-    }
-
-    pub fn intersections(&self, ray: &Ray) -> Option<Hit> {
+impl<M: Material + Clone> Object for PolyMesh<M> {
+    fn intersection(&self, ray: &Ray) -> Option<Hit> {
         let mut intersections = self
             .triangles
             .iter()
@@ -243,5 +235,23 @@ impl PolyMesh {
         });
 
         intersections.first().map(|f| *f)
+    }
+
+    fn apply_transform(self: &mut PolyMesh<M>, tr: &Affine3A) {
+        self.triangles = self
+            .triangles
+            .iter()
+            .map(|mut t| {
+                Triangle::new(
+                    tr.transform_point3(t.a),
+                    tr.transform_point3(t.b),
+                    tr.transform_point3(t.c),
+                )
+            })
+            .collect();
+    }
+
+    fn get_material(&self) -> Box<&dyn Material> {
+        Box::new(&self.material)
     }
 }

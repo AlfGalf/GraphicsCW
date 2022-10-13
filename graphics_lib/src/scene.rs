@@ -1,87 +1,18 @@
 use crate::camera::Camera;
-use crate::color::Color;
 use crate::frame_buffer::{FrameBuffer, Pixel};
 use crate::hit::Hit;
-use crate::poly_mesh::PolyMesh;
-use crate::ray::Ray;
-use glam::Vec3;
+use crate::object::Object;
 use rayon::prelude::*;
+use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct Scene {
-    pub objects: Vec<Object>,
-    pub lights: Vec<Lights>,
+    pub objects: Vec<Box<dyn Object + Sync>>,
+    pub lights: Vec<Box<dyn Lights + Sync>>,
     pub camera: Camera,
 }
 
-#[derive(Debug)]
-pub struct Object {
-    obj: ObjectEnum,
-    color: Color,
-}
-
-impl Object {
-    pub fn new_poly(mesh: PolyMesh, color: Color) -> Self {
-        Self {
-            obj: ObjectEnum::Poly { poly: mesh },
-            color,
-        }
-    }
-
-    pub fn new_sphere(center: Vec3, rad: f32, color: Color) -> Self {
-        Self {
-            obj: ObjectEnum::Sphere { rad, center },
-            color,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum ObjectEnum {
-    Sphere { rad: f32, center: Vec3 },
-    Poly { poly: PolyMesh },
-    Plane { a: f32, b: f32, c: f32, d: f32 },
-}
-
-#[derive(Debug)]
-pub enum Lights {
-    Directional {
-        direction: Vec3,
-        position: Vec3,
-        color: Color,
-    },
-}
-
-impl Ray {
-    pub fn intersection(&self, object: &Object) -> Option<Hit> {
-        match &object.obj {
-            ObjectEnum::Sphere { center, rad } => {
-                // (D.D)*t2+(D.P)*2t+(P.P–R2) =0
-                let relative_position: Vec3 = self.position - *center;
-                let b = 2. * self.direction.dot(relative_position);
-                let c = relative_position.dot(relative_position) - rad * rad;
-
-                let discriminant: f32 = b * b - 4. * c;
-                if discriminant <= 0. {
-                    None
-                } else {
-                    let sqrt = discriminant.sqrt();
-                    let t0 = (sqrt - b) / 2.;
-                    let t1 = (-sqrt - b) / 2.;
-                    let t = t0.min(t1);
-                    if t <= 0. {
-                        None
-                    } else {
-                        let pos = self.position + self.direction * t;
-                        Some(Hit::new(pos, (pos - *center).normalize()))
-                    }
-                }
-            }
-            ObjectEnum::Poly { poly, .. } => poly.intersections(self),
-            ObjectEnum::Plane { .. } => None,
-        }
-    }
-}
+pub trait Lights: Debug {}
 
 impl Scene {
     pub fn render(&self, width: usize, height: usize) -> FrameBuffer {
@@ -101,32 +32,19 @@ impl Scene {
                         let mut intersections = self
                             .objects
                             .iter()
-                            .filter_map(|o| (ray.intersection(o).map(|s| (s, o))))
-                            .collect::<Vec<(Hit, &Object)>>();
-                        intersections.sort_by(|l, r| {
-                            self.camera
-                                .position
-                                .distance(l.0.pos)
-                                .partial_cmp(&self.camera.position.distance(r.0.pos))
-                                .unwrap()
-                        });
+                            .filter_map(|o| {
+                                o.intersection(&ray)
+                                    .map(|s| (s, o, self.camera.position.distance(s.pos)))
+                            })
+                            .collect::<Vec<(Hit, &Box<dyn Object + Sync>, f32)>>();
+
+                        intersections.sort_by(|l, r| l.2.partial_cmp(&r.2).unwrap());
 
                         if let Some(v) = intersections.first() {
                             (
                                 x,
                                 *y,
-                                Pixel::from_colors(
-                                    (v.0.normal.x + 1.0) * 0.5,
-                                    (v.0.normal.y + 1.0) * 0.5,
-                                    (v.0.normal.z + 1.0) * 0.5,
-                                    0.,
-                                ),
-                                // Pixel::from_colors(
-                                //     v.1.color.red,
-                                //     v.1.color.green,
-                                //     v.1.color.blue,
-                                //     0.,
-                                // ),
+                                Pixel::from_color(v.1.get_material().compute_once(&ray, &v.0), 0.),
                             )
                         } else {
                             (x, *y, Pixel::from_colors(0.0, 0.0, 0.0, 0.0))

@@ -1,3 +1,5 @@
+use crate::color::Color;
+
 #[derive(Clone, Debug)]
 pub struct Pixel {
     pub red: f32,
@@ -21,6 +23,15 @@ impl Pixel {
             red: r,
             green: g,
             blue: b,
+            depth: d,
+        }
+    }
+
+    pub fn from_color(color: Color, d: f32) -> Self {
+        Pixel {
+            red: color.red,
+            green: color.green,
+            blue: color.blue,
             depth: d,
         }
     }
