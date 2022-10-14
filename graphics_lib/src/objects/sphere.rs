@@ -1,6 +1,6 @@
 use crate::hit::Hit;
-use crate::material::Material;
-use crate::object::Object;
+use crate::materials::material::Material;
+use crate::objects::object::Object;
 use crate::ray::Ray;
 use glam::{Affine3A, Vec3};
 
@@ -36,12 +36,9 @@ impl<M: Material + Clone> Object for Sphere<M> {
             let t0 = (sqrt - b) / 2.;
             let t1 = (-sqrt - b) / 2.;
             let t = t0.min(t1);
-            if t <= 0. {
-                None
-            } else {
-                let pos = ray.position + ray.direction * t;
-                Some(Hit::new(pos, (pos - self.center).normalize()))
-            }
+
+            let pos = ray.position + ray.direction * t;
+            Some(Hit::new(pos, (pos - self.center).normalize(), t))
         }
     }
 

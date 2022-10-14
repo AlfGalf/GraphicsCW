@@ -1,6 +1,6 @@
 use crate::hit::Hit;
-use crate::material::Material;
-use crate::object::Object;
+use crate::materials::material::Material;
+use crate::objects::object::Object;
 use crate::ray::Ray;
 use glam::{Affine3A, Vec3};
 use std::fs::File;
@@ -220,19 +220,14 @@ impl<M: Material + Clone> Object for PolyMesh<M> {
                 let v2 = (p - p2).cross(p0 - p2).dot(normal);
 
                 if v0 >= -epsilon && v1 >= -epsilon && v2 >= -epsilon {
-                    Some(Hit::new(p, normal))
+                    Some(Hit::new(p, normal, t))
                 } else {
                     None
                 }
             })
             .collect::<Vec<Hit>>();
 
-        intersections.sort_by(|l, r| {
-            ray.position
-                .distance(l.pos)
-                .partial_cmp(&ray.position.distance(r.pos))
-                .unwrap()
-        });
+        intersections.sort_by(|l, r| l.get_distance().partial_cmp(&r.get_distance()).unwrap());
 
         intersections.first().map(|f| *f)
     }
@@ -241,7 +236,7 @@ impl<M: Material + Clone> Object for PolyMesh<M> {
         self.triangles = self
             .triangles
             .iter()
-            .map(|mut t| {
+            .map(|t| {
                 Triangle::new(
                     tr.transform_point3(t.a),
                     tr.transform_point3(t.b),

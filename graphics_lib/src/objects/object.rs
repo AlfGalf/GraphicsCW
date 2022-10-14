@@ -1,5 +1,5 @@
 use crate::hit::Hit;
-use crate::material::Material;
+use crate::materials::material::Material;
 use crate::ray::Ray;
 use glam::Affine3A;
 use std::fmt::Debug;

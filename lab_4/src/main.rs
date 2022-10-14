@@ -3,8 +3,8 @@ extern crate graphics_lib;
 use glam::{Affine3A, Vec3};
 use graphics_lib::camera::Camera;
 use graphics_lib::color::Color;
-use graphics_lib::materials::false_color_material::FalseColorMaterial;
-use graphics_lib::materials::simple_color_material::SimpleColorMaterial;
+use graphics_lib::lights::directional_light::DirectionalLight;
+use graphics_lib::materials::blinn_phong_material::BlinnPhongMaterial;
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
 use graphics_lib::objects::poly_mesh::PolyMesh;
@@ -23,7 +23,8 @@ fn main() {
 
     let mut teapot = PolyMesh::from_file(
         BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
-        FalseColorMaterial {},
+        BlinnPhongMaterial::new_from_color(Color::new(0., 0.5, 1.0), 0.6),
+        // FalseColorMaterial::new(),
         false,
     )
     .unwrap();
@@ -38,26 +39,35 @@ fn main() {
     let sphere = Sphere::new(
         Vec3::new(1., 1., -0.5),
         1.,
-        SimpleColorMaterial::new(Color {
-            red: 1.0,
-            green: 0.0,
-            blue: 0.0,
-        }),
+        BlinnPhongMaterial::new_from_color(Color::new(1., 0.5, 0.5) * 0.5, 0.6),
+        // FalseColorMaterial::new(),
     );
 
     let plane = Plane::new(
-        Vec3::new(0., -4., 0.),
+        Vec3::new(0., -2., 0.),
         Vec3::new(0., 1., 0.),
-        SimpleColorMaterial::new(Color {
-            red: 0.0,
-            green: 0.0,
-            blue: 1.0,
-        }),
+        BlinnPhongMaterial::new_from_color(Color::new(0.2, 0.8, 0.2), 0.5),
+        // FalseColorMaterial::new(),
     );
 
+    let plane_2 = Plane::new(
+        Vec3::new(0., 0., 0.),
+        Vec3::new(0., 0., -1.),
+        // FalseColorMaterial::new(),
+        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4),
+    );
+
+    let light = DirectionalLight::new(Vec3::new(6.0, -10.0, 6.0), Color::new(0.9, 0.3, 0.3));
+    let light_2 = DirectionalLight::new(Vec3::new(-6.0, -10.0, 6.0), Color::new(0.3, 0.3, 0.9));
+
     let scene = Scene {
-        objects: vec![Box::new(teapot), Box::new(sphere), Box::new(plane)],
-        lights: vec![],
+        objects: vec![
+            Box::new(teapot),
+            Box::new(sphere),
+            Box::new(plane),
+            Box::new(plane_2),
+        ],
+        lights: vec![Box::new(light), Box::new(light_2)],
         camera: Camera {
             position: Vec3::new(0., 0., -20.),
             direction: Vec3::new(0.05, 0.0, 1.0),

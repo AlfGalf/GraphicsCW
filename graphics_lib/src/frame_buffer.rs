@@ -29,9 +29,9 @@ impl Pixel {
 
     pub fn from_color(color: Color, d: f32) -> Self {
         Pixel {
-            red: color.red,
-            green: color.green,
-            blue: color.blue,
+            red: color.red(),
+            green: color.green(),
+            blue: color.blue(),
             depth: d,
         }
     }
@@ -76,10 +76,10 @@ impl FrameBuffer {
     pub fn to_rgb_file(&self) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::new();
 
-        let max_val = self.frame_buffer.iter().fold(0., |prev: f32, pixel| {
+        let max_val = self.frame_buffer.iter().fold(f32::MIN, |prev: f32, pixel| {
             prev.max(pixel.red).max(pixel.green).max(pixel.blue)
         });
-        let min_val = self.frame_buffer.iter().fold(0., |prev: f32, pixel| {
+        let min_val = self.frame_buffer.iter().fold(f32::MAX, |prev: f32, pixel| {
             prev.min(pixel.red).min(pixel.green).min(pixel.blue)
         });
 
@@ -98,14 +98,44 @@ impl FrameBuffer {
 
         self.frame_buffer.iter().for_each(|pixel| {
             output.push(u8::try_from((((pixel.red - min_val) / diff) * 255.) as usize).unwrap());
-            output.push(u8::try_from(((pixel.green * 255.) / diff) as usize).unwrap());
-            output.push(u8::try_from(((pixel.blue * 255.) / diff) as usize).unwrap());
+            output.push(u8::try_from((((pixel.green - min_val) / diff) * 255.) as usize).unwrap());
+            output.push(u8::try_from((((pixel.blue - min_val) / diff) * 255.) as usize).unwrap());
         });
 
         output
     }
 
-    pub fn to_depth_file(&self) -> String {
-        todo!()
+    pub fn to_depth_file(&self) -> Vec<u8> {
+        let mut output: Vec<u8> = Vec::new();
+
+        let max_val = self
+            .frame_buffer
+            .iter()
+            .fold(f32::MIN, |prev: f32, pixel| prev.max(pixel.depth));
+        let min_val = self
+            .frame_buffer
+            .iter()
+            .fold(f32::MAX, |prev: f32, pixel| prev.min(pixel.depth));
+
+        let diff = if max_val - min_val == 0. {
+            1.
+        } else {
+            max_val - min_val
+        };
+
+        output.append(&mut "P6\n".as_bytes().to_vec());
+        output.append(
+            &mut format!("{} {}\n255\n", self.width, self.height)
+                .as_bytes()
+                .to_vec(),
+        );
+
+        self.frame_buffer.iter().for_each(|pixel| {
+            output.push(u8::try_from((((max_val - pixel.depth) / diff) * 255.) as usize).unwrap());
+            output.push(u8::try_from((((max_val - pixel.depth) / diff) * 255.) as usize).unwrap());
+            output.push(u8::try_from((((max_val - pixel.depth) / diff) * 255.) as usize).unwrap());
+        });
+
+        output
     }
 }
