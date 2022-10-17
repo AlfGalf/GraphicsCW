@@ -1,7 +1,7 @@
-use crate::hit::Hit;
 use crate::materials::material::Material;
 use crate::objects::object::Object;
-use crate::ray::Ray;
+use crate::primitives::plane::PlanePrimitive;
+use crate::primitives::primitive::Primitive;
 use glam::{Affine3A, Vec3};
 use std::fmt::Debug;
 
@@ -23,24 +23,6 @@ impl<M: Material> Plane<M> {
 }
 
 impl<M: Material> Object for Plane<M> {
-    fn intersection(&self, ray: &Ray) -> Option<Hit> {
-        let epsilon = 0.00001;
-
-        let normal = self.normal;
-
-        if ray.direction.dot(normal).abs() < epsilon {
-            return None;
-        }
-
-        let d = self.normal.dot(self.point);
-
-        let t = (d - normal.dot(ray.position)) / normal.dot(ray.direction);
-
-        let p = ray.position + t * ray.direction;
-
-        Some(Hit::new(p, normal, t, Box::new(self)))
-    }
-
     fn apply_transform(&mut self, t: &Affine3A) {
         self.point = t.transform_point3(self.point);
         self.normal = t.transform_vector3(self.normal);
@@ -48,5 +30,13 @@ impl<M: Material> Object for Plane<M> {
 
     fn get_material(&self) -> Box<&dyn Material> {
         Box::new(&self.material)
+    }
+
+    fn primitives(&self, index: usize) -> Vec<Box<dyn Primitive + Sync>> {
+        vec![Box::new(PlanePrimitive::new(
+            self.point,
+            self.normal,
+            index,
+        ))]
     }
 }

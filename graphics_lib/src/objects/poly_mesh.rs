@@ -1,7 +1,7 @@
-use crate::hit::Hit;
 use crate::materials::material::Material;
 use crate::objects::object::Object;
-use crate::ray::Ray;
+use crate::primitives::primitive::Primitive;
+use crate::primitives::triangle::TrianglePrimitive;
 use glam::{Affine3A, Vec3};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -11,21 +11,11 @@ pub struct Triangle {
     pub a: Vec3,
     pub b: Vec3,
     pub c: Vec3,
-    pub n: Vec3,
-    pub d: f32,
 }
 
 impl Triangle {
     pub fn new(a: Vec3, b: Vec3, c: Vec3) -> Self {
-        let normal = (c - a).cross(b - a).normalize();
-
-        Triangle {
-            a,
-            b,
-            c,
-            n: normal,
-            d: a.dot(normal),
-        }
+        Triangle { a, b, c }
     }
 }
 
@@ -192,46 +182,6 @@ impl<M: Material> PolyMesh<M> {
 }
 
 impl<M: Material + Clone> Object for PolyMesh<M> {
-    fn intersection(&self, ray: &Ray) -> Option<Hit> {
-        let mut intersections = self
-            .triangles
-            .iter()
-            .filter_map(|tri| {
-                let epsilon = 0.00001;
-
-                let p0 = tri.a;
-                let p1 = tri.b;
-                let p2 = tri.c;
-
-                let normal = tri.n;
-
-                if ray.direction.dot(normal).abs() < epsilon {
-                    return None;
-                }
-
-                let d = tri.d;
-
-                let t = (d - normal.dot(ray.position)) / normal.dot(ray.direction);
-
-                let p = ray.position + t * ray.direction;
-
-                let v0 = (p - p0).cross(p1 - p0).dot(normal);
-                let v1 = (p - p1).cross(p2 - p1).dot(normal);
-                let v2 = (p - p2).cross(p0 - p2).dot(normal);
-
-                if v0 >= -epsilon && v1 >= -epsilon && v2 >= -epsilon {
-                    Some(Hit::new(p, normal, t, Box::new(self)))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<Hit>>();
-
-        intersections.sort_by(|l, r| l.get_distance().partial_cmp(&r.get_distance()).unwrap());
-
-        intersections.first().map(|f| f.clone())
-    }
-
     fn apply_transform(self: &mut PolyMesh<M>, tr: &Affine3A) {
         self.triangles = self
             .triangles
@@ -248,5 +198,14 @@ impl<M: Material + Clone> Object for PolyMesh<M> {
 
     fn get_material(&self) -> Box<&dyn Material> {
         Box::new(&self.material)
+    }
+
+    fn primitives(&self, material_index: usize) -> Vec<Box<dyn Primitive + Sync>> {
+        self.triangles
+            .iter()
+            .map::<Box<dyn Primitive + Sync>, _>(|t| {
+                Box::new(TrianglePrimitive::new(t.a, t.b, t.c, material_index))
+            })
+            .collect()
     }
 }

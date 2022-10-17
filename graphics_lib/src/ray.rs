@@ -12,4 +12,8 @@ impl Ray {
             direction: direction.normalize(),
         }
     }
+
+    pub fn bvh_ray(&self) -> bvh::ray::Ray {
+        bvh::ray::Ray::new(self.position - 100. * self.direction, self.direction)
+    }
 }

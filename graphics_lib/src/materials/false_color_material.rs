@@ -24,4 +24,8 @@ impl Material for FalseColorMaterial {
     fn compute_per_light(&self, _: &Ray, _: &Hit, _: &Vec3, _: Color) -> Color {
         Color::new(0.0, 0.0, 0.0)
     }
+
+    fn clone_dyn(&self) -> Box<dyn Material + Sync> {
+        Box::new(self.clone())
+    }
 }

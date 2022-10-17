@@ -3,21 +3,57 @@ use crate::color::Color;
 use crate::frame_buffer::{FrameBuffer, Pixel};
 use crate::hit::Hit;
 use crate::lights::light::Light;
+use crate::materials::material::Material;
 use crate::objects::object::Object;
+use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
-use glam::Vec3;
+use bvh::aabb::{Bounded, AABB};
+use bvh::bounding_hierarchy::BHShape;
+use bvh::bvh::BVH;
 use rayon::prelude::*;
 use std::fmt::Debug;
-use std::iter::FilterMap;
 
 #[derive(Debug)]
 pub struct Scene {
-    pub objects: Vec<Box<dyn Object + Sync>>,
+    materials: Vec<Box<dyn Material + Sync>>,
     pub lights: Vec<Box<dyn Light + Sync>>,
+    primitives: Vec<PrimitiveWrapper>,
     pub camera: Camera,
+    bvh: BVH,
 }
 
 impl Scene {
+    pub fn new(
+        objects: Vec<Box<dyn Object + Sync>>,
+        lights: Vec<Box<dyn Light + Sync>>,
+        camera: Camera,
+    ) -> Scene {
+        let materials: Vec<Box<dyn Material + Sync>> = objects
+            .iter()
+            .map::<Box<dyn Material + Sync>, _>(|o| o.get_material().clone_dyn())
+            .collect();
+
+        let mut primitives: Vec<PrimitiveWrapper> = objects
+            .iter()
+            .enumerate()
+            .map(|(i, o)| o.primitives(i))
+            .flatten()
+            .map(|p| PrimitiveWrapper { primitive: p })
+            .collect();
+
+        let bvh = BVH::build(&mut primitives);
+
+        Scene {
+            lights,
+            materials,
+            camera,
+            primitives,
+            bvh,
+        }
+    }
+}
+
+impl<'a> Scene {
     pub fn render(&self, width: usize, height: usize) -> FrameBuffer {
         let mut fb = FrameBuffer::new(width, height);
 
@@ -46,7 +82,7 @@ impl Scene {
                                 x,
                                 *y,
                                 Pixel::from_color(
-                                    v.get_object().get_material().compute_once(
+                                    self.materials[v.get_object().get_material()].compute_once(
                                         &ray,
                                         &v,
                                         Color::new(1., 1., 1.),
@@ -54,12 +90,13 @@ impl Scene {
                                         .lights
                                         .iter()
                                         .map(|l| {
-                                            v.get_object().get_material().compute_per_light(
-                                                &ray,
-                                                &v,
-                                                &l.get_direction(&v.pos),
-                                                l.get_intensity(&v.pos, self),
-                                            )
+                                            self.materials[v.get_object().get_material()]
+                                                .compute_per_light(
+                                                    &ray,
+                                                    &v,
+                                                    &l.get_direction(&v.pos),
+                                                    l.get_intensity(&v.pos, self),
+                                                )
                                         })
                                         .sum(),
                                     v.get_distance().min(100.),
@@ -82,7 +119,30 @@ impl Scene {
         fb
     }
 
-    pub fn intersection<'a>(&'a self, ray: &'a Ray) -> impl Iterator<Item = Hit> + '_ {
-        self.objects.iter().filter_map(|o| o.intersection(ray))
+    pub fn intersection(&'a self, ray: &'a Ray) -> impl Iterator<Item = Hit> + '_ {
+        self.bvh
+            .traverse(&ray.bvh_ray(), &self.primitives)
+            .into_iter()
+            .filter_map(move |o| o.primitive.intersection(&ray))
+    }
+}
+
+#[derive(Debug)]
+struct PrimitiveWrapper {
+    primitive: Box<dyn Primitive + Sync>,
+}
+
+impl Bounded for PrimitiveWrapper {
+    fn aabb(&self) -> AABB {
+        self.primitive.aabb()
+    }
+}
+impl BHShape for PrimitiveWrapper {
+    fn set_bh_node_index(&mut self, n: usize) {
+        self.primitive.set_bh_node_index(n)
+    }
+
+    fn bh_node_index(&self) -> usize {
+        self.primitive.bh_node_index()
     }
 }

@@ -66,4 +66,8 @@ impl Material for BlinnPhongMaterial {
 
         light.scale(&(diffuse + specular))
     }
+
+    fn clone_dyn(&self) -> Box<dyn Material + Sync> {
+        Box::new(self.clone())
+    }
 }
