@@ -1,6 +1,7 @@
 use crate::color::Color;
+use crate::lights::light::Light;
 use crate::ray::Ray;
-use crate::scene::{Light, Scene};
+use crate::scene::Scene;
 use glam::Vec3;
 
 const EPSILON: f32 = 0.001;
@@ -25,15 +26,8 @@ impl Light for DirectionalLight {
         let ray = Ray::new(*point, self.direction);
 
         if scene
-            .objects
-            .iter()
-            .filter_map(|o| {
-                if o.intersection(&ray)?.get_distance() < -EPSILON {
-                    Some(())
-                } else {
-                    None
-                }
-            })
+            .intersection(&ray)
+            .filter(|r| r.get_distance() < -EPSILON)
             .next()
             .is_some()
         {

@@ -38,7 +38,12 @@ impl<M: Material + Clone> Object for Sphere<M> {
             let t = t0.min(t1);
 
             let pos = ray.position + ray.direction * t;
-            Some(Hit::new(pos, (pos - self.center).normalize(), t))
+            Some(Hit::new(
+                pos,
+                (pos - self.center).normalize(),
+                t,
+                Box::new(self),
+            ))
         }
     }
 

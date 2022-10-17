@@ -38,21 +38,13 @@ fn main() {
     let sphere = Sphere::new(
         Vec3::new(1., 1., -0.5),
         1.,
-        SimpleColorMaterial::new(Color {
-            red: 1.0,
-            green: 0.0,
-            blue: 0.0,
-        }),
+        SimpleColorMaterial::new(Color::new(1.0, 0.0, 0.0)),
     );
 
     let plane = Plane::new(
         Vec3::new(0., -4., 0.),
         Vec3::new(0., 1., 0.),
-        SimpleColorMaterial::new(Color {
-            red: 0.0,
-            green: 0.0,
-            blue: 1.0,
-        }),
+        SimpleColorMaterial::new(Color::new(0.0, 0.0, 1.0)),
     );
 
     let scene = Scene {

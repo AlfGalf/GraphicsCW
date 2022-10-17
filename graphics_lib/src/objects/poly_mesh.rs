@@ -220,7 +220,7 @@ impl<M: Material + Clone> Object for PolyMesh<M> {
                 let v2 = (p - p2).cross(p0 - p2).dot(normal);
 
                 if v0 >= -epsilon && v1 >= -epsilon && v2 >= -epsilon {
-                    Some(Hit::new(p, normal, t))
+                    Some(Hit::new(p, normal, t, Box::new(self)))
                 } else {
                     None
                 }
@@ -229,7 +229,7 @@ impl<M: Material + Clone> Object for PolyMesh<M> {
 
         intersections.sort_by(|l, r| l.get_distance().partial_cmp(&r.get_distance()).unwrap());
 
-        intersections.first().map(|f| *f)
+        intersections.first().map(|f| f.clone())
     }
 
     fn apply_transform(self: &mut PolyMesh<M>, tr: &Affine3A) {

@@ -51,7 +51,7 @@ fn main() {
     );
 
     let plane_2 = Plane::new(
-        Vec3::new(0., 0., 0.),
+        Vec3::new(0., 0., 4.),
         Vec3::new(0., 0., -1.),
         // FalseColorMaterial::new(),
         BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4),
@@ -59,6 +59,7 @@ fn main() {
 
     let light = DirectionalLight::new(Vec3::new(6.0, -10.0, 6.0), Color::new(0.9, 0.3, 0.3));
     let light_2 = DirectionalLight::new(Vec3::new(-6.0, -10.0, 6.0), Color::new(0.3, 0.3, 0.9));
+    let light_3 = DirectionalLight::new(Vec3::new(0.0, -2.0, 20.0), Color::new(0.1, 0.3, 0.1));
 
     let scene = Scene {
         objects: vec![
@@ -67,7 +68,7 @@ fn main() {
             Box::new(plane),
             Box::new(plane_2),
         ],
-        lights: vec![Box::new(light), Box::new(light_2)],
+        lights: vec![Box::new(light), Box::new(light_2), Box::new(light_3)],
         camera: Camera {
             position: Vec3::new(0., 0., -20.),
             direction: Vec3::new(0.05, 0.0, 1.0),

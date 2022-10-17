@@ -38,7 +38,7 @@ impl<M: Material> Object for Plane<M> {
 
         let p = ray.position + t * ray.direction;
 
-        Some(Hit::new(p, normal, t))
+        Some(Hit::new(p, normal, t, Box::new(self)))
     }
 
     fn apply_transform(&mut self, t: &Affine3A) {

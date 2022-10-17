@@ -2,21 +2,19 @@ use crate::camera::Camera;
 use crate::color::Color;
 use crate::frame_buffer::{FrameBuffer, Pixel};
 use crate::hit::Hit;
+use crate::lights::light::Light;
 use crate::objects::object::Object;
+use crate::ray::Ray;
 use glam::Vec3;
 use rayon::prelude::*;
 use std::fmt::Debug;
+use std::iter::FilterMap;
 
 #[derive(Debug)]
 pub struct Scene {
     pub objects: Vec<Box<dyn Object + Sync>>,
     pub lights: Vec<Box<dyn Light + Sync>>,
     pub camera: Camera,
-}
-
-pub trait Light: Debug {
-    fn get_intensity(&self, point: &Vec3, scene: &Scene) -> Color;
-    fn get_direction(&self, point: &Vec3) -> Vec3;
 }
 
 impl Scene {
@@ -35,39 +33,36 @@ impl Scene {
                         );
 
                         let mut intersections = self
-                            .objects
-                            .iter()
-                            .filter_map(|o| {
-                                o.intersection(&ray)
-                                    .filter(|s| s.get_distance() > 0.)
-                                    .map(|s| (s, o, self.camera.position.distance(s.pos)))
-                            })
-                            .collect::<Vec<(Hit, &Box<dyn Object + Sync>, f32)>>();
+                            .intersection(&ray)
+                            .filter(|s| s.get_distance() > 0.)
+                            .collect::<Vec<Hit>>();
 
-                        intersections.sort_by(|l, r| l.2.partial_cmp(&r.2).unwrap());
+                        intersections.sort_by(|l, r| {
+                            l.get_distance().partial_cmp(&r.get_distance()).unwrap()
+                        });
 
                         if let Some(v) = intersections.first() {
                             (
                                 x,
                                 *y,
                                 Pixel::from_color(
-                                    v.1.get_material().compute_once(
+                                    v.get_object().get_material().compute_once(
                                         &ray,
-                                        &v.0,
+                                        &v,
                                         Color::new(1., 1., 1.),
                                     ) + self
                                         .lights
                                         .iter()
                                         .map(|l| {
-                                            v.1.get_material().compute_per_light(
+                                            v.get_object().get_material().compute_per_light(
                                                 &ray,
-                                                &v.0,
-                                                &l.get_direction(&v.0.pos),
-                                                l.get_intensity(&v.0.pos, self),
+                                                &v,
+                                                &l.get_direction(&v.pos),
+                                                l.get_intensity(&v.pos, self),
                                             )
                                         })
                                         .sum(),
-                                    v.0.get_distance().min(100.),
+                                    v.get_distance().min(100.),
                                 ),
                             )
                         } else {
@@ -85,5 +80,9 @@ impl Scene {
         });
 
         fb
+    }
+
+    pub fn intersection<'a>(&'a self, ray: &'a Ray) -> impl Iterator<Item = Hit> + '_ {
+        self.objects.iter().filter_map(|o| o.intersection(ray))
     }
 }
