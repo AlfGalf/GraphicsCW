@@ -16,12 +16,8 @@ impl SimpleColorMaterial {
 }
 
 impl Material for SimpleColorMaterial {
-    fn compute_once(&self, _: &Ray, _: &Hit, _: Color) -> Color {
+    fn compute(&self, _: &Ray, _: &Hit, _: Color, _: Vec<(Vec3, Color)>) -> Color {
         self.color
-    }
-
-    fn compute_per_light(&self, _: &Ray, _: &Hit, _: &Vec3, _: Color) -> Color {
-        Color::new(0.0, 0.0, 0.0)
     }
 
     fn clone_dyn(&self) -> Box<dyn Material + Sync> {

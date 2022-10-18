@@ -3,13 +3,22 @@ use glam::Vec3;
 
 #[derive(Debug)]
 pub struct Camera {
-    pub position: Vec3,
-    pub direction: Vec3,
-    pub up: Vec3,
-    pub focal_length: f32,
+    position: Vec3,
+    direction: Vec3,
+    up: Vec3,
+    focal_length: f32,
 }
 
 impl Camera {
+    pub fn new(position: Vec3, direction: Vec3, up: Vec3, focal_length: f32) -> Camera {
+        Camera {
+            position,
+            direction,
+            up,
+            focal_length,
+        }
+    }
+
     // x should vary -1 -> 1
     // y should vary -a -> a
     pub fn ray(&self, x: f32, y: f32) -> Ray {

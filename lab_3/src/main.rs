@@ -47,16 +47,16 @@ fn main() {
         SimpleColorMaterial::new(Color::new(0.0, 0.0, 1.0)),
     );
 
-    let scene = Scene {
-        objects: vec![Box::new(teapot), Box::new(sphere), Box::new(plane)],
-        lights: vec![],
-        camera: Camera {
-            position: Vec3::new(0., 0., -20.),
-            direction: Vec3::new(0.05, 0.0, 1.0),
-            up: Vec3::new(0., 1., 0.),
-            focal_length: 2.0,
-        },
-    };
+    let scene = Scene::new(
+        vec![Box::new(teapot), Box::new(sphere), Box::new(plane)],
+        vec![],
+        Camera::new(
+            Vec3::new(0., 0., -20.),
+            Vec3::new(0.05, 0.0, 1.0),
+            Vec3::new(0., 1., 0.),
+            2.0,
+        ),
+    );
 
     let fb = scene.render(960, 540);
 

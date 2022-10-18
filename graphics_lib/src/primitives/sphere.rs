@@ -46,8 +46,8 @@ impl Primitive for SpherePrimitive {
     }
 
     fn intersection(&self, ray: &Ray) -> Option<Hit> {
-        let relative_position: Vec3 = ray.position - self.center;
-        let b = 2. * ray.direction.dot(relative_position);
+        let relative_position: Vec3 = ray.position() - self.center;
+        let b = 2. * ray.direction().dot(relative_position);
         let c = relative_position.dot(relative_position) - self.rad * self.rad;
 
         let discriminant: f32 = b * b - 4. * c;
@@ -60,7 +60,7 @@ impl Primitive for SpherePrimitive {
             let t1 = (-sqrt - b) / 2.;
             let t = t0.min(t1);
 
-            let pos = ray.position + ray.direction * t;
+            let pos = ray.position() + ray.direction() * t;
             Some(Hit::new(
                 pos,
                 (pos - self.center).normalize(),

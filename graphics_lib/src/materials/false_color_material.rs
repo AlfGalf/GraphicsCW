@@ -13,16 +13,12 @@ impl FalseColorMaterial {
     }
 }
 impl Material for FalseColorMaterial {
-    fn compute_once(&self, _: &Ray, hit: &Hit, _: Color) -> Color {
+    fn compute(&self, _: &Ray, hit: &Hit, _: Color, _: Vec<(Vec3, Color)>) -> Color {
         Color::new(
-            (hit.normal.x + 1.0) * 0.5,
-            (hit.normal.y + 1.0) * 0.5,
-            (hit.normal.z + 1.0) * 0.5,
+            (hit.normal().x + 1.0) * 0.5,
+            (hit.normal().y + 1.0) * 0.5,
+            (hit.normal().z + 1.0) * 0.5,
         )
-    }
-
-    fn compute_per_light(&self, _: &Ray, _: &Hit, _: &Vec3, _: Color) -> Color {
-        Color::new(0.0, 0.0, 0.0)
     }
 
     fn clone_dyn(&self) -> Box<dyn Material + Sync> {

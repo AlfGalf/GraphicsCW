@@ -175,7 +175,7 @@ impl<M: Material> PolyMesh<M> {
 
         Ok(PolyMesh {
             triangles: faces,
-            smoothing: false,
+            smoothing: smooth,
             material,
         })
     }

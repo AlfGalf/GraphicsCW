@@ -82,23 +82,20 @@ impl<'a> Scene {
                                 x,
                                 *y,
                                 Pixel::from_color(
-                                    self.materials[v.get_object().get_material()].compute_once(
+                                    self.materials[v.get_object().get_material()].compute(
                                         &ray,
                                         &v,
                                         Color::new(1., 1., 1.),
-                                    ) + self
-                                        .lights
-                                        .iter()
-                                        .map(|l| {
-                                            self.materials[v.get_object().get_material()]
-                                                .compute_per_light(
-                                                    &ray,
-                                                    &v,
-                                                    &l.get_direction(&v.pos),
-                                                    l.get_intensity(&v.pos, self),
+                                        self.lights
+                                            .iter()
+                                            .map(|l| {
+                                                (
+                                                    l.get_direction(&v.pos()),
+                                                    l.get_intensity(&v.pos(), self),
                                                 )
-                                        })
-                                        .sum(),
+                                            })
+                                            .collect(),
+                                    ),
                                     v.get_distance().min(100.),
                                 ),
                             )

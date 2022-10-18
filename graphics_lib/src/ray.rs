@@ -1,8 +1,8 @@
 use glam::Vec3;
 
 pub struct Ray {
-    pub position: Vec3,
-    pub direction: Vec3,
+    position: Vec3,
+    direction: Vec3,
 }
 
 impl Ray {
@@ -15,5 +15,13 @@ impl Ray {
 
     pub fn bvh_ray(&self) -> bvh::ray::Ray {
         bvh::ray::Ray::new(self.position - 100. * self.direction, self.direction)
+    }
+
+    pub fn position(&self) -> Vec3 {
+        self.position.clone()
+    }
+
+    pub fn direction(&self) -> Vec3 {
+        self.direction.clone()
     }
 }

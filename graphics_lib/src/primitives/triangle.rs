@@ -64,15 +64,15 @@ impl Primitive for TrianglePrimitive {
 
         let normal = self.n;
 
-        if ray.direction.dot(normal).abs() < EPSILON {
+        if ray.direction().dot(normal).abs() < EPSILON {
             return None;
         }
 
         let d = self.d;
 
-        let t = (d - normal.dot(ray.position)) / normal.dot(ray.direction);
+        let t = (d - normal.dot(ray.position())) / normal.dot(ray.direction());
 
-        let p = ray.position + t * ray.direction;
+        let p = ray.position() + t * ray.direction();
 
         let v0 = (p - p0).cross(p1 - p0).dot(normal);
         let v1 = (p - p1).cross(p2 - p1).dot(normal);

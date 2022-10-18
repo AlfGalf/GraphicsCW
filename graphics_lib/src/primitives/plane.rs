@@ -10,7 +10,6 @@ const EPSILON: f32 = 0.00001;
 
 #[derive(Debug, Copy, Clone)]
 pub struct PlanePrimitive {
-    point: Vec3,
     normal: Vec3,
     d: f32,
     material: usize,
@@ -20,9 +19,8 @@ pub struct PlanePrimitive {
 impl PlanePrimitive {
     pub fn new(point: Vec3, normal: Vec3, material: usize) -> Self {
         Self {
-            point,
             normal,
-            d: 0.0,
+            d: normal.dot(point),
             material,
             node_index: 0,
         }
@@ -54,19 +52,15 @@ impl Primitive for PlanePrimitive {
     }
 
     fn intersection(&self, ray: &Ray) -> Option<Hit> {
-        let normal = self.normal;
-
-        if ray.direction.dot(normal).abs() < EPSILON {
+        if ray.direction().dot(self.normal).abs() < EPSILON {
             return None;
         }
 
-        let d = self.normal.dot(self.point);
+        let t = (self.d - self.normal.dot(ray.position())) / self.normal.dot(ray.direction());
 
-        let t = (d - normal.dot(ray.position)) / normal.dot(ray.direction);
+        let p = ray.position() + t * ray.direction();
 
-        let p = ray.position + t * ray.direction;
-
-        Some(Hit::new(p, normal, t, Box::new(*self)))
+        Some(Hit::new(p, self.normal, t, Box::new(*self)))
     }
 
     fn clone_dyn(&self) -> Box<dyn Primitive + Sync> {

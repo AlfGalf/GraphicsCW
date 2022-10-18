@@ -69,12 +69,12 @@ fn main() {
             Box::new(plane_2),
         ],
         vec![Box::new(light), Box::new(light_2), Box::new(light_3)],
-        Camera {
-            position: Vec3::new(0., 0., -20.),
-            direction: Vec3::new(0.05, 0.0, 1.0),
-            up: Vec3::new(0., 1., 0.),
-            focal_length: 2.0,
-        },
+        Camera::new(
+            Vec3::new(0., 0., -20.),
+            Vec3::new(0.05, 0.0, 1.0),
+            Vec3::new(0., 1., 0.),
+            2.0,
+        ),
     );
 
     let fb = scene.render(960, 540);

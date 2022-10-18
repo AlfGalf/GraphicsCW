@@ -3,8 +3,8 @@ use glam::Vec3;
 
 #[derive(Clone)]
 pub struct Hit {
-    pub pos: Vec3,
-    pub normal: Vec3,
+    pos: Vec3,
+    normal: Vec3,
     distance: f32,
     object: Box<dyn Primitive + Sync>,
 }
@@ -17,6 +17,14 @@ impl Hit {
             distance,
             object,
         }
+    }
+
+    pub fn normal(&self) -> &Vec3 {
+        &self.normal
+    }
+
+    pub fn pos(&self) -> &Vec3 {
+        &self.pos
     }
 
     pub fn get_distance(&self) -> f32 {
