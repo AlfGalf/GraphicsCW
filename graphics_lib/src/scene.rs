@@ -54,6 +54,36 @@ impl Scene {
 }
 
 impl<'a> Scene {
+    pub fn calc_ray(
+        &self,
+        ray: &Ray,
+        reflection_power: Color,
+        reflection_depth: usize,
+    ) -> (Color, f32) {
+        let mut intersections = self
+            .intersection(&ray)
+            .filter(|s| s.get_distance() > 0.)
+            .collect::<Vec<Hit>>();
+
+        intersections.sort_by(|l, r| l.get_distance().partial_cmp(&r.get_distance()).unwrap());
+
+        if let Some(v) = intersections.first() {
+            (
+                self.materials[v.get_object().get_material()].compute(
+                    &ray,
+                    &v,
+                    Color::new(1., 1., 1.),
+                    self,
+                    reflection_depth,
+                    reflection_power,
+                ),
+                v.get_distance().min(100.),
+            )
+        } else {
+            (Color::new(0.0, 0.0, 0.0), 0.0)
+        }
+    }
+
     pub fn render(&self, width: usize, height: usize) -> FrameBuffer {
         let mut fb = FrameBuffer::new(width, height);
 
@@ -68,40 +98,9 @@ impl<'a> Scene {
                             (2. * -(*y as f32) + height as f32) / width as f32,
                         );
 
-                        let mut intersections = self
-                            .intersection(&ray)
-                            .filter(|s| s.get_distance() > 0.)
-                            .collect::<Vec<Hit>>();
+                        let res = self.calc_ray(&ray, Color::new(1., 1., 1.), 0);
 
-                        intersections.sort_by(|l, r| {
-                            l.get_distance().partial_cmp(&r.get_distance()).unwrap()
-                        });
-
-                        if let Some(v) = intersections.first() {
-                            (
-                                x,
-                                *y,
-                                Pixel::from_color(
-                                    self.materials[v.get_object().get_material()].compute(
-                                        &ray,
-                                        &v,
-                                        Color::new(1., 1., 1.),
-                                        self.lights
-                                            .iter()
-                                            .map(|l| {
-                                                (
-                                                    l.get_direction(&v.pos()),
-                                                    l.get_intensity(&v.pos(), self),
-                                                )
-                                            })
-                                            .collect(),
-                                    ),
-                                    v.get_distance().min(100.),
-                                ),
-                            )
-                        } else {
-                            (x, *y, Pixel::from_colors(0.0, 0.0, 0.0, 0.0))
-                        }
+                        (x, *y, Pixel::from_color(res.0, res.1))
                     })
                     .collect::<Vec<(usize, usize, Pixel)>>()
             })

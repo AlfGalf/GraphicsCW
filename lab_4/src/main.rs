@@ -4,6 +4,7 @@ use glam::{Affine3A, Vec3};
 use graphics_lib::camera::Camera;
 use graphics_lib::color::Color;
 use graphics_lib::lights::directional_light::DirectionalLight;
+use graphics_lib::lights::point_light::PointLight;
 use graphics_lib::materials::blinn_phong_material::BlinnPhongMaterial;
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
@@ -23,7 +24,7 @@ fn main() {
 
     let mut teapot = PolyMesh::from_file(
         BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
-        BlinnPhongMaterial::new_from_color(Color::new(0., 0.5, 1.0), 0.6),
+        BlinnPhongMaterial::new_from_color(Color::new(0.1, 0.6, 0.1), 0.4, 0.0),
         // FalseColorMaterial::new(),
         false,
     )
@@ -33,42 +34,88 @@ fn main() {
         1.0, 0.0, 0.0, //1
         0.0, 0.0, 1.0, //2
         0.0, 1.0, 0.0, // 3
-        0.0, -2.0, 0.0, //
+        -1.0, -2.0, -1.0, //
     ]));
 
     let sphere = Sphere::new(
         Vec3::new(1., 1., -0.5),
         1.,
-        BlinnPhongMaterial::new_from_color(Color::new(1., 0.5, 0.5) * 0.5, 0.6),
+        BlinnPhongMaterial::new_from_color(Color::new(1., 0.5, 0.5) * 0.7, 0.2, 0.6),
         // FalseColorMaterial::new(),
     );
 
-    let plane = Plane::new(
+    let sphere3 = Sphere::new(
+        Vec3::new(3.5, 2.5, -1.),
+        1.,
+        BlinnPhongMaterial::new_from_color(Color::new(0.5, 1.0, 0.5) * 0.7, 0.2, 0.6),
+        // FalseColorMaterial::new(),
+    );
+
+    let sphere2 = Sphere::new(
+        Vec3::new(3.5, 0.0, 0.),
+        1.,
+        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 1.0) * 0.7, 0.2, 0.6),
+        // FalseColorMaterial::new(),
+    );
+
+    let plane_bottom = Plane::new(
         Vec3::new(0., -2., 0.),
         Vec3::new(0., 1., 0.),
-        BlinnPhongMaterial::new_from_color(Color::new(0.2, 0.8, 0.2), 0.5),
+        BlinnPhongMaterial::new_from_color(Color::new(0.2, 0.2, 0.2), 0.1, 0.0),
         // FalseColorMaterial::new(),
     );
 
-    let plane_2 = Plane::new(
+    let plane_back = Plane::new(
         Vec3::new(0., 0., 4.),
         Vec3::new(0., 0., -1.),
         // FalseColorMaterial::new(),
-        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4),
+        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4, 0.2),
     );
 
-    let light = DirectionalLight::new(Vec3::new(6.0, -10.0, 6.0), Color::new(0.9, 0.3, 0.3));
-    let light_2 = DirectionalLight::new(Vec3::new(-6.0, -10.0, 6.0), Color::new(0.3, 0.3, 0.9));
-    let light_3 = DirectionalLight::new(Vec3::new(0.0, -2.0, 20.0), Color::new(0.1, 0.3, 0.1));
+    let plane_left = Plane::new(
+        Vec3::new(-4., 0., 0.),
+        Vec3::new(1., 0., 0.),
+        // FalseColorMaterial::new(),
+        BlinnPhongMaterial::new_from_color(Color::new(0.3, 0.3, 0.8), 0.4, 0.0),
+    );
+
+    let plane_right = Plane::new(
+        Vec3::new(6., 0., 0.),
+        Vec3::new(-1., 0., 0.),
+        // FalseColorMaterial::new(),
+        BlinnPhongMaterial::new_from_color(Color::new(0.8, 0.3, 0.3), 0.4, 0.3),
+    );
+
+    let plane_top = Plane::new(
+        Vec3::new(0., 4., 0.),
+        Vec3::new(0., -1., 0.),
+        // FalseColorMaterial::new(),
+        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4, 0.0),
+    );
+
+    let plane_front = Plane::new(
+        Vec3::new(0., 0., -25.),
+        Vec3::new(0., 0., 1.),
+        // FalseColorMaterial::new(),
+        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4, 0.0),
+    );
+
+    let light = PointLight::new(Vec3::new(-2.0, 4.0, -7.0), Color::new(0.9, 0.5, 0.7));
 
     let scene = Scene::new(
         vec![
             Box::new(teapot),
             Box::new(sphere),
-            Box::new(plane),
-            Box::new(plane_2),
+            Box::new(sphere2),
+            Box::new(sphere3),
+            Box::new(plane_back),
+            Box::new(plane_right),
+            Box::new(plane_left),
+            Box::new(plane_top),
+            Box::new(plane_bottom),
+            Box::new(plane_front),
         ],
-        vec![Box::new(light), Box::new(light_2), Box::new(light_3)],
+        vec![Box::new(light)],
         Camera::new(
             Vec3::new(0., 0., -20.),
             Vec3::new(0.05, 0.0, 1.0),

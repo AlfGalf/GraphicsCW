@@ -1,6 +1,8 @@
 use crate::color::Color;
 use crate::hit::Hit;
+use crate::lights::light::Light;
 use crate::ray::Ray;
+use crate::scene::Scene;
 use glam::Vec3;
 use std::fmt::Debug;
 
@@ -10,7 +12,9 @@ pub trait Material: Debug {
         view_ray: &Ray,
         hit: &Hit,
         ambient: Color,
-        lights: Vec<(Vec3, Color)>,
+        scene: &Scene,
+        recurse_depth: usize,
+        recurse_power: Color,
     ) -> Color;
 
     fn clone_dyn(&self) -> Box<dyn Material + Sync>;

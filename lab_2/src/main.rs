@@ -50,5 +50,6 @@ fn main() {
         draw_line(&mut fm, x1 as usize, y1 as usize, x2 as usize, y2 as usize);
         draw_line(&mut fm, x2 as usize, y2 as usize, x0 as usize, y0 as usize);
     }
+
     File::write_all(&mut file, &(fm.to_rgb_file())).unwrap();
 }

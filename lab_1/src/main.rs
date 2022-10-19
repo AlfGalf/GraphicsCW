@@ -14,13 +14,13 @@ fn main() {
         .open("file.ppm")
         .unwrap();
 
-    let mut fm = FrameBuffer::new(512, 256);
+    let mut fb = FrameBuffer::new(512, 256);
 
-    draw_line(&mut fm, 10, 0, 10, 200);
-    draw_line(&mut fm, 400, 0, 400, 200);
+    draw_line(&mut fb, 10, 0, 10, 200);
+    draw_line(&mut fb, 400, 0, 400, 200);
 
-    draw_line(&mut fm, 40, 30, 20, 20);
-    draw_line(&mut fm, 40, 20, 20, 30);
+    draw_line(&mut fb, 40, 30, 20, 20);
+    draw_line(&mut fb, 40, 20, 20, 30);
 
-    File::write_all(&mut file, &(fm.to_rgb_file())).unwrap();
+    File::write_all(&mut file, &(fb.to_rgb_file())).unwrap();
 }

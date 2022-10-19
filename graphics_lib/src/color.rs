@@ -33,6 +33,10 @@ impl Color {
             color: self.color * rhs.color,
         }
     }
+
+    pub fn min_val(&self) -> f32 {
+        self.color.min_element()
+    }
 }
 
 impl Add<Color> for Color {
