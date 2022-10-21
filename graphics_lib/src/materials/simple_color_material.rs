@@ -3,7 +3,6 @@ use crate::hit::Hit;
 use crate::materials::material::Material;
 use crate::ray::Ray;
 use crate::scene::Scene;
-use glam::Vec3;
 
 #[derive(Debug, Clone)]
 pub struct SimpleColorMaterial {

@@ -4,7 +4,7 @@ use crate::ray::Ray;
 use crate::scene::Scene;
 use glam::Vec3;
 
-const EPSILON: f32 = 0.001;
+const EPSILON: f32 = 0.01;
 
 #[derive(Debug)]
 pub struct PointLight {
@@ -27,15 +27,15 @@ impl Light for PointLight {
             .intersection(&ray)
             .filter(|r| r.get_distance() > 0. && r.get_distance() < distance - EPSILON)
             .next()
-            .is_some()
+            .is_none()
         {
-            Color::new_black()
+            self.color * (1. / ((1. + distance / 10.) * (1. + distance / 10.)))
         } else {
-            self.color
+            Color::new_black()
         }
     }
 
     fn get_direction(&self, point: &Vec3) -> Vec3 {
-        (self.position - *point).normalize()
+        (*point - self.position).normalize()
     }
 }

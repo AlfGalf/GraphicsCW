@@ -1,9 +1,7 @@
 use crate::color::Color;
 use crate::hit::Hit;
-use crate::lights::light::Light;
 use crate::ray::Ray;
 use crate::scene::Scene;
-use glam::Vec3;
 use std::fmt::Debug;
 
 pub trait Material: Debug {

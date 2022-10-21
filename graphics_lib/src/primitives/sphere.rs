@@ -61,6 +61,10 @@ impl Primitive for SpherePrimitive {
             let t = t0.min(t1);
 
             let pos = ray.position() + ray.direction() * t;
+
+            // TODO: Make this only intersect if going through normal side
+            // TODO: May need to rejig this for rarefaction, light coming in other side
+
             Some(Hit::new(
                 pos,
                 (pos - self.center).normalize(),

@@ -14,6 +14,12 @@ impl Color {
         }
     }
 
+    pub fn new_grey(c: f32) -> Self {
+        Self {
+            color: Vec3::new(c, c, c),
+        }
+    }
+
     pub fn new_black() -> Self {
         Self { color: Vec3::ZERO }
     }
@@ -36,6 +42,10 @@ impl Color {
 
     pub fn min_val(&self) -> f32 {
         self.color.min_element()
+    }
+
+    pub fn max_val(&self) -> f32 {
+        self.color.max_element()
     }
 }
 

@@ -5,7 +5,8 @@ use graphics_lib::camera::Camera;
 use graphics_lib::color::Color;
 use graphics_lib::lights::directional_light::DirectionalLight;
 use graphics_lib::lights::point_light::PointLight;
-use graphics_lib::materials::blinn_phong_material::BlinnPhongMaterial;
+use graphics_lib::materials::compound_material::CompoundMaterial;
+use graphics_lib::materials::diffuse_material::DiffuseMaterial;
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
 use graphics_lib::objects::poly_mesh::PolyMesh;
@@ -24,7 +25,10 @@ fn main() {
 
     let mut teapot = PolyMesh::from_file(
         BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
-        BlinnPhongMaterial::new_from_color(Color::new(0.1, 0.6, 0.1), 0.4, 0.0),
+        graphics_lib::materials::compound_material::CompoundMaterial::new_matte_material(
+            Color::new(0.1, 0.6, 0.1),
+            0.4,
+        ),
         // FalseColorMaterial::new(),
         false,
     )
@@ -40,28 +44,28 @@ fn main() {
     let sphere = Sphere::new(
         Vec3::new(1., 1., -0.5),
         1.,
-        BlinnPhongMaterial::new_from_color(Color::new(1., 0.5, 0.5) * 0.7, 0.2, 0.6),
+        CompoundMaterial::new_reflective_material(Color::new(1., 0.5, 0.5) * 0.7, 0.6),
         // FalseColorMaterial::new(),
     );
 
     let sphere3 = Sphere::new(
         Vec3::new(3.5, 2.5, -1.),
         1.,
-        BlinnPhongMaterial::new_from_color(Color::new(0.5, 1.0, 0.5) * 0.7, 0.2, 0.6),
+        CompoundMaterial::new_reflective_material(Color::new(0.5, 1.0, 0.5) * 0.7, 0.6),
         // FalseColorMaterial::new(),
     );
 
     let sphere2 = Sphere::new(
         Vec3::new(3.5, 0.0, 0.),
         1.,
-        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 1.0) * 0.7, 0.2, 0.6),
+        CompoundMaterial::new_matte_material(Color::new(0.5, 0.5, 1.0) * 0.7, 0.2),
         // FalseColorMaterial::new(),
     );
 
     let plane_bottom = Plane::new(
         Vec3::new(0., -2., 0.),
         Vec3::new(0., 1., 0.),
-        BlinnPhongMaterial::new_from_color(Color::new(0.2, 0.2, 0.2), 0.1, 0.0),
+        CompoundMaterial::new_reflective_material(Color::new(0.2, 0.2, 0.2), 0.1),
         // FalseColorMaterial::new(),
     );
 
@@ -69,41 +73,51 @@ fn main() {
         Vec3::new(0., 0., 4.),
         Vec3::new(0., 0., -1.),
         // FalseColorMaterial::new(),
-        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4, 0.2),
+        CompoundMaterial::new_reflective_material(Color::new(0.5, 0.5, 0.5), 0.4),
     );
 
     let plane_left = Plane::new(
         Vec3::new(-4., 0., 0.),
         Vec3::new(1., 0., 0.),
         // FalseColorMaterial::new(),
-        BlinnPhongMaterial::new_from_color(Color::new(0.3, 0.3, 0.8), 0.4, 0.0),
+        CompoundMaterial::new_matte_material(Color::new(0.3, 0.3, 0.8), 0.4),
     );
 
     let plane_right = Plane::new(
         Vec3::new(6., 0., 0.),
         Vec3::new(-1., 0., 0.),
         // FalseColorMaterial::new(),
-        BlinnPhongMaterial::new_from_color(Color::new(0.8, 0.3, 0.3), 0.4, 0.3),
+        CompoundMaterial::new_reflective_material(Color::new(0.8, 0.3, 0.3), 0.3),
     );
 
     let plane_top = Plane::new(
         Vec3::new(0., 4., 0.),
         Vec3::new(0., -1., 0.),
         // FalseColorMaterial::new(),
-        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4, 0.0),
+        CompoundMaterial::new_matte_material(Color::new(0.5, 0.5, 0.5), 0.4),
     );
 
     let plane_front = Plane::new(
         Vec3::new(0., 0., -25.),
         Vec3::new(0., 0., 1.),
         // FalseColorMaterial::new(),
-        BlinnPhongMaterial::new_from_color(Color::new(0.5, 0.5, 0.5), 0.4, 0.0),
+        CompoundMaterial::new_matte_material(Color::new(0.5, 0.5, 0.5), 0.4),
     );
 
-    let light = PointLight::new(Vec3::new(-2.0, 4.0, -7.0), Color::new(0.9, 0.5, 0.7));
+    let diffuse_sphere = Sphere::new(
+        Vec3::new(1., 1., -0.5),
+        1.,
+        DiffuseMaterial::new(),
+        // FalseColorMaterial::new(),
+    );
+
+    let light = PointLight::new(Vec3::new(-2.0, 4.0, -7.0), Color::new(0.9, 0.8, 0.85));
+    let light2 = PointLight::new(Vec3::new(4.0, 4.0, -15.0), Color::new(0.8, 0.9, 0.85));
+    let dir_light = DirectionalLight::new(Vec3::new(2.0, -4.0, 2.0), Color::new(0.9, 0.8, 0.85));
 
     let scene = Scene::new(
         vec![
+            // Box::new(diffuse_sphere),
             Box::new(teapot),
             Box::new(sphere),
             Box::new(sphere2),
@@ -115,7 +129,12 @@ fn main() {
             Box::new(plane_bottom),
             Box::new(plane_front),
         ],
-        vec![Box::new(light)],
+        vec![
+            Box::new(light),
+            Box::new(light2),
+            // Box::new(dir_light)
+            //
+        ],
         Camera::new(
             Vec3::new(0., 0., -20.),
             Vec3::new(0.05, 0.0, 1.0),

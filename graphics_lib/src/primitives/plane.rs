@@ -60,6 +60,9 @@ impl Primitive for PlanePrimitive {
 
         let p = ray.position() + t * ray.direction();
 
+        // TODO: Make this only intersect if going through normal side
+        // TODO: Make hit record which way through material it went?
+
         Some(Hit::new(p, self.normal, t, Box::new(*self)))
     }
 

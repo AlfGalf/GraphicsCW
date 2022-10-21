@@ -2,6 +2,7 @@ extern crate core;
 
 pub mod camera;
 pub mod color;
+mod constants;
 pub mod frame_buffer;
 pub mod hit;
 pub mod lights;
