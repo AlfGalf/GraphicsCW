@@ -14,12 +14,4 @@ pub trait Material: Debug {
         recurse_depth: usize,
         recurse_power: Color,
     ) -> Color;
-
-    fn clone_dyn(&self) -> Box<dyn Material>;
-}
-
-impl Clone for Box<dyn Material> {
-    fn clone(self: &Box<dyn Material>) -> Box<dyn Material> {
-        self.clone_dyn()
-    }
 }

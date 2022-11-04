@@ -17,8 +17,4 @@ impl Material for AmbientMaterial {
     fn compute(&self, _: &Ray, _: &Hit, ambient: Color, _: &Scene, _: usize, _: Color) -> Color {
         ambient
     }
-
-    fn clone_dyn(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
-    }
 }

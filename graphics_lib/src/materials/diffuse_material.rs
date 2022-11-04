@@ -25,8 +25,4 @@ impl Material for DiffuseMaterial {
             c + intensity * diffuse
         })
     }
-
-    fn clone_dyn(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
-    }
 }

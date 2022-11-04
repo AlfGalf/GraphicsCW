@@ -33,14 +33,11 @@ impl Material for TransparentMaterial {
             - (cos_t_t - (1. / self.refractive_index) * cos_t_i) * *normal;
 
         let refracted_ray = Ray::new(*hit.pos() + refracted_dir * EPSILON, refracted_dir);
-        //
+
         // let internal_hit = scene.intersection(&refracted_ray).filter(|h| h.get_object().get_material() == )
-        //
+
         scene
             .calc_ray(&refracted_ray, recurse_power, recurse_depth + 1)
             .0
-    }
-    fn clone_dyn(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
     }
 }

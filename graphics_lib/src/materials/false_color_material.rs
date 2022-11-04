@@ -20,8 +20,4 @@ impl Material for FalseColorMaterial {
             (hit.normal().z + 1.0) * 0.5,
         )
     }
-
-    fn clone_dyn(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
-    }
 }

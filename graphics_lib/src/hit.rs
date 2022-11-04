@@ -3,19 +3,19 @@ use glam::Vec3;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct Hit {
+pub struct Hit<'a> {
     pos: Vec3,
     normal: Vec3,
     distance: f32,
-    object: Box<dyn Primitive + Sync + Send>,
+    object: Box<&'a (dyn Primitive + Sync + Send)>,
 }
 
-impl Hit {
+impl<'a> Hit<'a> {
     pub fn new(
         pos: Vec3,
         normal: Vec3,
         distance: f32,
-        object: Box<dyn Primitive + Sync + Send>,
+        object: Box<&'a (dyn Primitive + Sync + Send)>,
     ) -> Hit {
         Hit {
             pos,
@@ -37,7 +37,7 @@ impl Hit {
         self.distance
     }
 
-    pub fn get_object(&self) -> &Box<dyn Primitive + Sync + Send> {
-        &self.object
+    pub fn get_object(&self) -> Box<&(dyn Primitive + Sync + Send)> {
+        Box::new(*self.object)
     }
 }

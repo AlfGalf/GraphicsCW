@@ -71,7 +71,7 @@ impl Primitive for SpherePrimitive {
                 pos,
                 (pos - self.center).normalize(),
                 t,
-                Box::new(self.clone()),
+                Box::new(self),
             ))
         }
     }

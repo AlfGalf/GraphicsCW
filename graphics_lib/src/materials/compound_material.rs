@@ -12,13 +12,13 @@ use crate::scene::Scene;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CompoundMaterial {
-    materials: Vec<(Arc<dyn Material + Sync + Send>, Color)>,
+    materials: Vec<(Box<dyn Material + Sync + Send>, Color)>,
 }
 
 impl CompoundMaterial {
-    pub fn new(materials: Vec<(Arc<dyn Material + Sync + Send>, Color)>) -> Self {
+    pub fn new(materials: Vec<(Box<dyn Material + Sync + Send>, Color)>) -> Self {
         let scale = 1.
             / materials
                 .iter()
@@ -36,13 +36,13 @@ impl CompoundMaterial {
         assert!(1. >= specular);
         assert!(0. <= specular);
         CompoundMaterial::new(vec![
-            (Arc::new(AmbientMaterial::new()), col * DEFAULT_AMBIENT),
+            (Box::new(AmbientMaterial::new()), col * DEFAULT_AMBIENT),
             (
-                Arc::new(DiffuseMaterial::new()),
+                Box::new(DiffuseMaterial::new()),
                 col * (1. - DEFAULT_AMBIENT) * (1. - specular),
             ),
             (
-                Arc::new(SpecularMaterial::new(10)),
+                Box::new(SpecularMaterial::new(10)),
                 col * (1. - DEFAULT_AMBIENT) * (specular),
             ),
         ])
@@ -52,13 +52,13 @@ impl CompoundMaterial {
         assert!(1. >= reflectivity);
         assert!(0. <= reflectivity);
         CompoundMaterial::new(vec![
-            (Arc::new(AmbientMaterial::new()), col * DEFAULT_AMBIENT),
+            (Box::new(AmbientMaterial::new()), col * DEFAULT_AMBIENT),
             (
-                Arc::new(DiffuseMaterial::new()),
+                Box::new(DiffuseMaterial::new()),
                 col * (1. - DEFAULT_AMBIENT) * (1. - reflectivity),
             ),
             (
-                Arc::new(ReflectiveMaterial::new()),
+                Box::new(ReflectiveMaterial::new()),
                 col * (1. - DEFAULT_AMBIENT) * (reflectivity),
             ),
         ])
@@ -67,11 +67,11 @@ impl CompoundMaterial {
     pub fn new_transparent_material(refractive_index: f32) -> CompoundMaterial {
         CompoundMaterial::new(vec![
             (
-                Arc::new(AmbientMaterial::new()),
+                Box::new(AmbientMaterial::new()),
                 Color::new_grey(DEFAULT_AMBIENT),
             ),
             (
-                Arc::new(TransparentMaterial::new(refractive_index)),
+                Box::new(TransparentMaterial::new(refractive_index)),
                 Color::new_grey(1. - DEFAULT_AMBIENT),
             ),
         ])
@@ -102,9 +102,5 @@ impl Material for CompoundMaterial {
                     )
                     .scale(c)
             })
-    }
-
-    fn clone_dyn(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
     }
 }

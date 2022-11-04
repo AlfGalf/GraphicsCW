@@ -106,9 +106,9 @@ impl Primitive for TrianglePrimitive {
 
                 let smoothed_normal = self.an * res.x + self.bn * res.y + self.cn * res.z;
 
-                Some(Hit::new(p, smoothed_normal, t, Box::new(self.clone())))
+                Some(Hit::new(p, smoothed_normal, t, Box::new(self)))
             } else {
-                Some(Hit::new(p, normal, t, Box::new(self.clone())))
+                Some(Hit::new(p, normal, t, Box::new(self)))
             }
         } else {
             None

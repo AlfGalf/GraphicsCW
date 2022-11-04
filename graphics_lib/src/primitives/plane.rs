@@ -65,7 +65,7 @@ impl Primitive for PlanePrimitive {
         // TODO: Make this only intersect if going through normal side
         // TODO: Make hit record which way through material it went?
 
-        Some(Hit::new(p, self.normal, t, Box::new(self.clone())))
+        Some(Hit::new(p, self.normal, t, Box::new(self)))
     }
 
     fn clone_dyn(&self) -> Box<dyn Primitive + Sync + Send> {

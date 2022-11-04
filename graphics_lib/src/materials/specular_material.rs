@@ -41,8 +41,4 @@ impl Material for SpecularMaterial {
             c + intensity * specular
         })
     }
-
-    fn clone_dyn(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
-    }
 }

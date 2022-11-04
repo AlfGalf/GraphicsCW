@@ -38,8 +38,4 @@ impl Material for ReflectiveMaterial {
             Color::new_black()
         }
     }
-
-    fn clone_dyn(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
-    }
 }

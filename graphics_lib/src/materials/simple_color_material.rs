@@ -19,8 +19,4 @@ impl Material for SimpleColorMaterial {
     fn compute(&self, _: &Ray, _: &Hit, _: Color, _: &Scene, _: usize, _: Color) -> Color {
         self.color
     }
-
-    fn clone_dyn(&self) -> Box<dyn Material> {
-        Box::new(self.clone())
-    }
 }

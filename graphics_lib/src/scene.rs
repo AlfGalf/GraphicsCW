@@ -109,11 +109,11 @@ impl<'a> Scene {
         fb
     }
 
-    pub fn intersection(&'a self, ray: &'a Ray) -> impl Iterator<Item = Hit> + '_ {
+    pub fn intersection(&'a self, ray: &'a Ray) -> impl Iterator<Item = Hit> + 'a {
         self.bvh
             .traverse(&ray.bvh_ray(), &self.primitives)
             .into_iter()
-            .filter_map(move |o| o.primitive.clone().intersection(&ray))
+            .filter_map(move |o| o.primitive.intersection(&ray))
     }
 }
 
