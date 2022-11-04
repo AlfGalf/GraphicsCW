@@ -105,15 +105,27 @@ impl Primitive for TrianglePrimitive {
         let t1 = v1 >= -EPSILON;
         let t2 = v2 >= -EPSILON;
 
-        if t0 == t1 && t1 == t2 {
+        if t0 && t1 && t2 {
             vec![if self.smoothing {
                 let res = self.mat.mul_vec3(p);
 
                 let smoothed_normal = self.an * res.x + self.bn * res.y + self.cn * res.z;
 
-                Hit::new(p, smoothed_normal, t, Box::new(self), t0)
+                Hit::new(
+                    p,
+                    smoothed_normal,
+                    t,
+                    Box::new(self),
+                    normal.dot(ray.direction()) < 0.,
+                )
             } else {
-                Hit::new(p, normal, t, Box::new(self), t0)
+                Hit::new(
+                    p,
+                    normal,
+                    t,
+                    Box::new(self),
+                    normal.dot(ray.direction()) < 0.,
+                )
             }]
         } else {
             vec![]

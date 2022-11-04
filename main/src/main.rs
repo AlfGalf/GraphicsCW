@@ -7,6 +7,7 @@ use graphics_lib::lights::directional_light::DirectionalLight;
 use graphics_lib::lights::point_light::PointLight;
 use graphics_lib::materials::compound_material::CompoundMaterial;
 use graphics_lib::materials::diffuse_material::DiffuseMaterial;
+use graphics_lib::materials::false_color_material::FalseColorMaterial;
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
 use graphics_lib::objects::poly_mesh::PolyMesh;
@@ -26,11 +27,8 @@ fn main() {
 
     let mut teapot = PolyMesh::from_file(
         BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
-        Arc::new(CompoundMaterial::new_reflective_material(
-            Color::new(0.3, 0.6, 0.3),
-            0.5,
-        )),
-        // FalseColorMaterial::new(),
+        Arc::new(CompoundMaterial::new_transparent_material(1.8)),
+        // Arc::new(FalseColorMaterial::new()),
         true,
     )
     .unwrap();
@@ -55,7 +53,7 @@ fn main() {
     let sphere3 = Sphere::new(
         Vec3::new(3.5, 2.5, -1.),
         1.,
-        Arc::new(CompoundMaterial::new_transparent_material(1.6)),
+        Arc::new(CompoundMaterial::new_transparent_material(1.8)),
         // FalseColorMaterial::new(),
     );
 
