@@ -3,16 +3,18 @@ use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::sphere::SpherePrimitive;
 use glam::{Affine3A, Vec3};
+use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct Sphere<M: Material> {
+pub struct Sphere {
     center: Vec3,
     rad: f32,
-    material: M,
+    material: Arc<dyn Material + Sync + Send>,
 }
 
-impl<M: Material> Sphere<M> {
-    pub fn new(center: Vec3, rad: f32, material: M) -> Sphere<M> {
+impl Sphere {
+    pub fn new(center: Vec3, rad: f32, material: Arc<dyn Material + Sync + Send>) -> Sphere {
         Sphere {
             center,
             rad,
@@ -21,16 +23,20 @@ impl<M: Material> Sphere<M> {
     }
 }
 
-impl<M: Material + Clone> Object for Sphere<M> {
-    fn apply_transform(self: &mut Sphere<M>, t: &Affine3A) {
+impl Object for Sphere {
+    fn apply_transform(self: &mut Sphere, t: &Affine3A) {
         self.center = t.transform_point3(self.center);
     }
 
-    fn get_material(&self) -> Box<&dyn Material> {
-        Box::new(&self.material)
+    fn get_material(&self) -> Arc<dyn Material + Sync + Send> {
+        self.material.clone()
     }
 
-    fn primitives(&self, index: usize) -> Vec<Box<dyn Primitive + Sync>> {
-        vec![Box::new(SpherePrimitive::new(self.center, self.rad, index))]
+    fn primitives(&self) -> Vec<Box<dyn Primitive + Sync + Send>> {
+        vec![Box::new(SpherePrimitive::new(
+            self.center,
+            self.rad,
+            self.material.clone(),
+        ))]
     }
 }

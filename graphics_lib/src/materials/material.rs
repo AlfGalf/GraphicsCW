@@ -15,11 +15,11 @@ pub trait Material: Debug {
         recurse_power: Color,
     ) -> Color;
 
-    fn clone_dyn(&self) -> Box<dyn Material + Sync>;
+    fn clone_dyn(&self) -> Box<dyn Material>;
 }
 
-impl Clone for Box<dyn Material + Sync> {
-    fn clone(self: &Box<dyn Material + Sync>) -> Box<dyn Material + Sync> {
+impl Clone for Box<dyn Material> {
+    fn clone(self: &Box<dyn Material>) -> Box<dyn Material> {
         self.clone_dyn()
     }
 }

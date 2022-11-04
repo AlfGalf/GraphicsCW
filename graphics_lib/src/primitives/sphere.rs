@@ -1,20 +1,22 @@
 use crate::hit::Hit;
+use crate::materials::material::Material;
 use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use glam::Vec3;
+use std::sync::Arc;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct SpherePrimitive {
     center: Vec3,
     rad: f32,
-    material: usize,
+    material: Arc<dyn Material + Sync + Send>,
     node_index: usize,
 }
 
 impl SpherePrimitive {
-    pub(crate) fn new(center: Vec3, rad: f32, material: usize) -> Self {
+    pub(crate) fn new(center: Vec3, rad: f32, material: Arc<dyn Material + Sync + Send>) -> Self {
         Self {
             center,
             rad,
@@ -41,8 +43,8 @@ impl Bounded for SpherePrimitive {
 }
 
 impl Primitive for SpherePrimitive {
-    fn get_material(&self) -> usize {
-        return self.material;
+    fn get_material(&self) -> Arc<dyn Material + Sync + Send> {
+        self.material.clone()
     }
 
     fn intersection(&self, ray: &Ray) -> Option<Hit> {
@@ -69,12 +71,12 @@ impl Primitive for SpherePrimitive {
                 pos,
                 (pos - self.center).normalize(),
                 t,
-                Box::new(*self),
+                Box::new(self.clone()),
             ))
         }
     }
 
-    fn clone_dyn(&self) -> Box<dyn Primitive + Sync> {
+    fn clone_dyn(&self) -> Box<dyn Primitive + Sync + Send> {
         Box::new(self.clone())
     }
 }

@@ -1,23 +1,25 @@
 use crate::hit::Hit;
+use crate::materials::material::Material;
 use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use glam::Vec3;
+use std::sync::Arc;
 
 const SCENE_BOUNDS: f32 = 1.0E10;
 const EPSILON: f32 = 0.00001;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct PlanePrimitive {
     normal: Vec3,
     d: f32,
-    material: usize,
+    material: Arc<dyn Material + Sync + Send>,
     node_index: usize,
 }
 
 impl PlanePrimitive {
-    pub fn new(point: Vec3, normal: Vec3, material: usize) -> Self {
+    pub fn new(point: Vec3, normal: Vec3, material: Arc<dyn Material + Sync + Send>) -> Self {
         Self {
             normal,
             d: normal.dot(point),
@@ -47,8 +49,8 @@ impl Bounded for PlanePrimitive {
 }
 
 impl Primitive for PlanePrimitive {
-    fn get_material(&self) -> usize {
-        self.material
+    fn get_material(&self) -> Arc<dyn Material + Sync + Send> {
+        self.material.clone()
     }
 
     fn intersection(&self, ray: &Ray) -> Option<Hit> {
@@ -63,10 +65,10 @@ impl Primitive for PlanePrimitive {
         // TODO: Make this only intersect if going through normal side
         // TODO: Make hit record which way through material it went?
 
-        Some(Hit::new(p, self.normal, t, Box::new(*self)))
+        Some(Hit::new(p, self.normal, t, Box::new(self.clone())))
     }
 
-    fn clone_dyn(&self) -> Box<dyn Primitive + Sync> {
+    fn clone_dyn(&self) -> Box<dyn Primitive + Sync + Send> {
         Box::new(self.clone())
     }
 }

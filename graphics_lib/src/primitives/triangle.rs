@@ -1,33 +1,55 @@
 use crate::hit::Hit;
+use crate::materials::material::Material;
 use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
-use glam::Vec3;
+use glam::{Mat3, Vec3};
+use std::rc::Rc;
+use std::sync::Arc;
 
 const EPSILON: f32 = 0.00001;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct TrianglePrimitive {
     a: Vec3,
     b: Vec3,
     c: Vec3,
     n: Vec3,
+    an: Vec3,
+    bn: Vec3,
+    cn: Vec3,
+    mat: Mat3,
     d: f32,
-    material: usize,
+    smoothing: bool,
+    material: Arc<dyn Material + Sync + Send>,
     node_index: usize,
 }
 
 impl TrianglePrimitive {
-    pub fn new(a: Vec3, b: Vec3, c: Vec3, material: usize) -> TrianglePrimitive {
-        let normal = (c - a).cross(b - a).normalize();
+    pub fn new(
+        a: Vec3,
+        b: Vec3,
+        c: Vec3,
+        n: Vec3,
+        an: Vec3,
+        bn: Vec3,
+        cn: Vec3,
+        smoothing: bool,
+        material: Arc<dyn Material + Sync + Send>,
+    ) -> TrianglePrimitive {
         TrianglePrimitive {
             a,
             b,
             c,
-            n: normal,
-            d: a.dot(normal),
+            an,
+            bn,
+            cn,
+            mat: Mat3::from_cols(a, b, c).inverse(),
+            n,
+            d: a.dot(n),
             material,
+            smoothing,
             node_index: 0,
         }
     }
@@ -53,8 +75,8 @@ impl Bounded for TrianglePrimitive {
 }
 
 impl Primitive for TrianglePrimitive {
-    fn get_material(&self) -> usize {
-        self.material
+    fn get_material(&self) -> Arc<dyn Material + Sync + Send> {
+        self.material.clone()
     }
 
     fn intersection(&self, ray: &Ray) -> Option<Hit> {
@@ -79,13 +101,21 @@ impl Primitive for TrianglePrimitive {
         let v2 = (p - p2).cross(p0 - p2).dot(normal);
 
         if v0 >= -EPSILON && v1 >= -EPSILON && v2 >= -EPSILON {
-            Some(Hit::new(p, normal, t, Box::new(*self)))
+            if self.smoothing {
+                let res = self.mat.mul_vec3(p);
+
+                let smoothed_normal = self.an * res.x + self.bn * res.y + self.cn * res.z;
+
+                Some(Hit::new(p, smoothed_normal, t, Box::new(self.clone())))
+            } else {
+                Some(Hit::new(p, normal, t, Box::new(self.clone())))
+            }
         } else {
             None
         }
     }
 
-    fn clone_dyn(&self) -> Box<dyn Primitive + Sync> {
+    fn clone_dyn(&self) -> Box<dyn Primitive + Sync + Send> {
         Box::new(self.clone())
     }
 }

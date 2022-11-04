@@ -15,6 +15,7 @@ use graphics_lib::scene::Scene;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
+use std::sync::Arc;
 
 fn main() {
     let mut file = fs::OpenOptions::new()
@@ -25,12 +26,12 @@ fn main() {
 
     let mut teapot = PolyMesh::from_file(
         BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
-        graphics_lib::materials::compound_material::CompoundMaterial::new_matte_material(
-            Color::new(0.1, 0.6, 0.1),
-            0.4,
-        ),
+        Arc::new(CompoundMaterial::new_reflective_material(
+            Color::new(0.3, 0.6, 0.3),
+            0.5,
+        )),
         // FalseColorMaterial::new(),
-        false,
+        true,
     )
     .unwrap();
 
@@ -44,28 +45,37 @@ fn main() {
     let sphere = Sphere::new(
         Vec3::new(1., 1., -0.5),
         1.,
-        CompoundMaterial::new_reflective_material(Color::new(1., 0.5, 0.5) * 0.7, 0.6),
+        Arc::new(CompoundMaterial::new_reflective_material(
+            Color::new(1., 0.6, 0.6) * 0.8,
+            0.7,
+        )),
         // FalseColorMaterial::new(),
     );
 
     let sphere3 = Sphere::new(
         Vec3::new(3.5, 2.5, -1.),
         1.,
-        CompoundMaterial::new_reflective_material(Color::new(0.5, 1.0, 0.5) * 0.7, 0.6),
+        Arc::new(CompoundMaterial::new_transparent_material(1.6)),
         // FalseColorMaterial::new(),
     );
 
     let sphere2 = Sphere::new(
         Vec3::new(3.5, 0.0, 0.),
         1.,
-        CompoundMaterial::new_matte_material(Color::new(0.5, 0.5, 1.0) * 0.7, 0.2),
+        Arc::new(CompoundMaterial::new_matte_material(
+            Color::new(0.5, 0.5, 1.0) * 0.7,
+            0.2,
+        )),
         // FalseColorMaterial::new(),
     );
 
     let plane_bottom = Plane::new(
         Vec3::new(0., -2., 0.),
         Vec3::new(0., 1., 0.),
-        CompoundMaterial::new_reflective_material(Color::new(0.2, 0.2, 0.2), 0.1),
+        Arc::new(CompoundMaterial::new_reflective_material(
+            Color::new(0.2, 0.2, 0.2),
+            0.1,
+        )),
         // FalseColorMaterial::new(),
     );
 
@@ -73,41 +83,56 @@ fn main() {
         Vec3::new(0., 0., 4.),
         Vec3::new(0., 0., -1.),
         // FalseColorMaterial::new(),
-        CompoundMaterial::new_reflective_material(Color::new(0.5, 0.5, 0.5), 0.4),
+        Arc::new(CompoundMaterial::new_reflective_material(
+            Color::new(0.5, 0.5, 0.5),
+            0.4,
+        )),
     );
 
     let plane_left = Plane::new(
         Vec3::new(-4., 0., 0.),
         Vec3::new(1., 0., 0.),
         // FalseColorMaterial::new(),
-        CompoundMaterial::new_matte_material(Color::new(0.3, 0.3, 0.8), 0.4),
+        Arc::new(CompoundMaterial::new_matte_material(
+            Color::new(0.3, 0.3, 0.8),
+            0.4,
+        )),
     );
 
     let plane_right = Plane::new(
         Vec3::new(6., 0., 0.),
         Vec3::new(-1., 0., 0.),
         // FalseColorMaterial::new(),
-        CompoundMaterial::new_reflective_material(Color::new(0.8, 0.3, 0.3), 0.3),
+        Arc::new(CompoundMaterial::new_reflective_material(
+            Color::new(0.8, 0.3, 0.3),
+            0.3,
+        )),
     );
 
     let plane_top = Plane::new(
         Vec3::new(0., 4., 0.),
         Vec3::new(0., -1., 0.),
         // FalseColorMaterial::new(),
-        CompoundMaterial::new_matte_material(Color::new(0.5, 0.5, 0.5), 0.4),
+        Arc::new(CompoundMaterial::new_matte_material(
+            Color::new(0.5, 0.5, 0.5),
+            0.4,
+        )),
     );
 
     let plane_front = Plane::new(
         Vec3::new(0., 0., -25.),
         Vec3::new(0., 0., 1.),
         // FalseColorMaterial::new(),
-        CompoundMaterial::new_matte_material(Color::new(0.5, 0.5, 0.5), 0.4),
+        Arc::new(CompoundMaterial::new_matte_material(
+            Color::new(0.5, 0.5, 0.5),
+            0.4,
+        )),
     );
 
     let diffuse_sphere = Sphere::new(
         Vec3::new(1., 1., -0.5),
         1.,
-        DiffuseMaterial::new(),
+        Arc::new(DiffuseMaterial::new()),
         // FalseColorMaterial::new(),
     );
 

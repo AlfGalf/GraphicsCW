@@ -5,33 +5,77 @@ use crate::primitives::triangle::TrianglePrimitive;
 use glam::{Affine3A, Vec3};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Triangle {
-    pub a: Vec3,
-    pub b: Vec3,
-    pub c: Vec3,
+    an: usize,
+    bn: usize,
+    cn: usize,
+    pub n: Vec3,
+}
+
+#[derive(Debug)]
+struct Vertex {
+    pub(crate) triangles: Vec<usize>,
+    p: Vec3,
+    normal: Option<Vec3>,
+}
+
+impl Vertex {
+    pub fn apply_transform(&mut self, tr: &Affine3A) {
+        self.p = tr.transform_point3(self.p)
+    }
+
+    pub fn compute_normal(&mut self, tr: &Vec<Triangle>) {
+        self.normal = Some({
+            let normal_sum = self
+                .triangles
+                .iter()
+                .fold(Vec3::ZERO, |v, i| v + tr.get(*i).unwrap().n);
+            normal_sum / (self.triangles.len() as f32)
+        });
+    }
 }
 
 impl Triangle {
-    pub fn new(a: Vec3, b: Vec3, c: Vec3) -> Self {
-        Triangle { a, b, c }
+    fn new(vs: &Vec<Vertex>, an: usize, bn: usize, cn: usize) -> Self {
+        let av = vs.get(an).unwrap().p;
+        let bv = vs.get(bn).unwrap().p;
+        let cv = vs.get(cn).unwrap().p;
+        let normal = (cv - av).cross(bv - av).normalize();
+        Triangle {
+            an,
+            bn,
+            cn,
+            n: normal,
+        }
+    }
+
+    fn update_normal(&mut self, vs: &Vec<Vertex>) {
+        let av = vs.get(self.an).unwrap().p;
+        let bv = vs.get(self.bn).unwrap().p;
+        let cv = vs.get(self.cn).unwrap().p;
+        let normal = (cv - av).cross(bv - av).normalize();
+        self.n = normal;
     }
 }
 
 #[derive(Debug)]
-pub struct PolyMesh<M: Material> {
+pub struct PolyMesh {
     pub triangles: Vec<Triangle>,
+    vertices: Vec<Vertex>,
     smoothing: bool,
-    material: M,
+    material: Arc<dyn Material + Sync + Send>,
 }
 
-impl<M: Material> PolyMesh<M> {
+impl PolyMesh {
     pub fn from_file(
         file: BufReader<File>,
-        material: M,
+        material: Arc<dyn Material + Sync + Send>,
         smooth: bool,
-    ) -> Result<PolyMesh<M>, &'static str> {
+    ) -> Result<PolyMesh, &'static str> {
         let mut lines = file.lines();
 
         if let Some(first) = lines.next() {
@@ -86,18 +130,17 @@ impl<M: Material> PolyMesh<M> {
                 .map_err(|_| "Faces number malformed.")?
         };
 
-        let mut vertices = Vec::with_capacity(num_vertices as usize);
+        let mut vertices: Vec<Vertex> = Vec::with_capacity(num_vertices as usize);
 
         for _ in 0..num_vertices {
-            vertices.push({
-                let line = lines
-                    .next()
-                    .ok_or("Vertex line missing")?
-                    .map_err(|_| "Cannot read vertex line.")?;
+            let line = lines
+                .next()
+                .ok_or("Vertex line missing")?
+                .map_err(|_| "Cannot read vertex line.")?;
 
-                let mut split_line = line.split(" ");
-
-                Vec3::new(
+            let mut split_line = line.split(" ");
+            vertices.push(Vertex {
+                p: Vec3::new(
                     split_line
                         .next()
                         .ok_or("Missing vertex (1)")?
@@ -113,13 +156,15 @@ impl<M: Material> PolyMesh<M> {
                         .ok_or("Missing vertex (3)")?
                         .parse()
                         .map_err(|_| "Malformed coordinate")?,
-                )
-            })
+                ),
+                triangles: vec![],
+                normal: None,
+            });
         }
 
         let mut faces = Vec::with_capacity(num_faces as usize);
 
-        for _ in 0..num_faces {
+        for i in 0..num_faces {
             faces.push({
                 let line = lines
                     .next()
@@ -141,70 +186,81 @@ impl<M: Material> PolyMesh<M> {
                     return Err("Face does not start with 3.");
                 }
 
-                let a: &Vec3 = vertices
-                    .get(
-                        split_line
-                            .next()
-                            .ok_or("Missing face (1)")?
-                            .parse::<usize>()
-                            .map_err(|_| "Malformed vertex index")?,
-                    )
-                    .ok_or("Face uses vertex out of range.")?;
-                let b: &Vec3 = vertices
-                    .get(
-                        split_line
-                            .next()
-                            .ok_or("Missing face (1)")?
-                            .parse::<usize>()
-                            .map_err(|_| "Malformed vertex index")?,
-                    )
-                    .ok_or("Face uses vertex out of range.")?;
-                let c: &Vec3 = vertices
-                    .get(
-                        split_line
-                            .next()
-                            .ok_or("Missing face (1)")?
-                            .parse::<usize>()
-                            .map_err(|_| "Malformed vertex index")?,
-                    )
-                    .ok_or("Face uses vertex out of range.")?;
+                let an: usize = split_line
+                    .next()
+                    .ok_or("Missing face (1)")?
+                    .parse::<usize>()
+                    .map_err(|_| "Malformed vertex index")?;
+                let bn: usize = split_line
+                    .next()
+                    .ok_or("Missing face (2)")?
+                    .parse::<usize>()
+                    .map_err(|_| "Malformed vertex index")?;
+                let cn: usize = split_line
+                    .next()
+                    .ok_or("Missing face (3)")?
+                    .parse::<usize>()
+                    .map_err(|_| "Malformed vertex index")?;
 
-                Triangle::new(*a, *b, *c)
-            })
+                vertices.get_mut(an).unwrap().triangles.push(i);
+                vertices.get_mut(bn).unwrap().triangles.push(i);
+                vertices.get_mut(cn).unwrap().triangles.push(i);
+
+                Triangle::new(&vertices, an, bn, cn)
+            });
         }
 
-        Ok(PolyMesh {
+        let mut pm = PolyMesh {
             triangles: faces,
             smoothing: smooth,
+            vertices,
             material,
-        })
+        };
+
+        for v in pm.vertices.iter_mut() {
+            v.compute_normal(&pm.triangles);
+        }
+
+        Ok(pm)
     }
 }
 
-impl<M: Material + Clone> Object for PolyMesh<M> {
-    fn apply_transform(self: &mut PolyMesh<M>, tr: &Affine3A) {
-        self.triangles = self
-            .triangles
-            .iter()
-            .map(|t| {
-                Triangle::new(
-                    tr.transform_point3(t.a),
-                    tr.transform_point3(t.b),
-                    tr.transform_point3(t.c),
-                )
-            })
-            .collect();
+impl Object for PolyMesh {
+    fn apply_transform(self: &mut PolyMesh, tr: &Affine3A) {
+        for v in self.vertices.iter_mut() {
+            v.apply_transform(tr);
+        }
+        for f in self.triangles.iter_mut() {
+            f.update_normal(&self.vertices);
+        }
+        for v in self.vertices.iter_mut() {
+            v.compute_normal(&self.triangles);
+        }
     }
 
-    fn get_material(&self) -> Box<&dyn Material> {
-        Box::new(&self.material)
+    fn get_material(&self) -> Arc<dyn Material + Sync + Send> {
+        self.material.clone()
     }
 
-    fn primitives(&self, material_index: usize) -> Vec<Box<dyn Primitive + Sync>> {
+    fn primitives(&self) -> Vec<Box<dyn Primitive + Sync + Send>> {
         self.triangles
             .iter()
-            .map::<Box<dyn Primitive + Sync>, _>(|t| {
-                Box::new(TrianglePrimitive::new(t.a, t.b, t.c, material_index))
+            .map::<Box<dyn Primitive + Sync + Send>, _>(|t| {
+                let va = self.vertices.get(t.an).unwrap();
+                let vb = self.vertices.get(t.bn).unwrap();
+                let vc = self.vertices.get(t.cn).unwrap();
+
+                Box::new(TrianglePrimitive::new(
+                    va.p,
+                    vb.p,
+                    vc.p,
+                    t.n,
+                    va.normal.unwrap(),
+                    vb.normal.unwrap(),
+                    vc.normal.unwrap(),
+                    self.smoothing,
+                    self.material.clone(),
+                ))
             })
             .collect()
     }

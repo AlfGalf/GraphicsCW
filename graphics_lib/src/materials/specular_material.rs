@@ -42,7 +42,7 @@ impl Material for SpecularMaterial {
         })
     }
 
-    fn clone_dyn(&self) -> Box<dyn Material + Sync> {
+    fn clone_dyn(&self) -> Box<dyn Material> {
         Box::new(self.clone())
     }
 }

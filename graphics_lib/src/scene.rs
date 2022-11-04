@@ -12,10 +12,10 @@ use bvh::bounding_hierarchy::BHShape;
 use bvh::bvh::BVH;
 use rayon::prelude::*;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Scene {
-    materials: Vec<Box<dyn Material + Sync>>,
     pub lights: Vec<Box<dyn Light + Sync>>,
     primitives: Vec<PrimitiveWrapper>,
     pub camera: Camera,
@@ -28,15 +28,10 @@ impl Scene {
         lights: Vec<Box<dyn Light + Sync>>,
         camera: Camera,
     ) -> Scene {
-        let materials: Vec<Box<dyn Material + Sync>> = objects
-            .iter()
-            .map::<Box<dyn Material + Sync>, _>(|o| o.get_material().clone_dyn())
-            .collect();
-
         let mut primitives: Vec<PrimitiveWrapper> = objects
             .iter()
             .enumerate()
-            .map(|(i, o)| o.primitives(i))
+            .map(|(i, o)| o.primitives())
             .flatten()
             .map(|p| PrimitiveWrapper { primitive: p })
             .collect();
@@ -45,7 +40,6 @@ impl Scene {
 
         Scene {
             lights,
-            materials,
             camera,
             primitives,
             bvh,
@@ -69,7 +63,7 @@ impl<'a> Scene {
 
         if let Some(v) = intersections.first() {
             (
-                self.materials[v.get_object().get_material()].compute(
+                v.get_object().get_material().compute(
                     &ray,
                     &v,
                     Color::new(1., 1., 1.),
@@ -119,13 +113,13 @@ impl<'a> Scene {
         self.bvh
             .traverse(&ray.bvh_ray(), &self.primitives)
             .into_iter()
-            .filter_map(move |o| o.primitive.intersection(&ray))
+            .filter_map(move |o| o.primitive.clone().intersection(&ray))
     }
 }
 
 #[derive(Debug)]
 struct PrimitiveWrapper {
-    primitive: Box<dyn Primitive + Sync>,
+    primitive: Box<dyn Primitive + Sync + Send>,
 }
 
 impl Bounded for PrimitiveWrapper {

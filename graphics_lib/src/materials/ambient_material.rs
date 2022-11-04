@@ -18,7 +18,7 @@ impl Material for AmbientMaterial {
         ambient
     }
 
-    fn clone_dyn(&self) -> Box<dyn Material + Sync> {
+    fn clone_dyn(&self) -> Box<dyn Material> {
         Box::new(self.clone())
     }
 }
