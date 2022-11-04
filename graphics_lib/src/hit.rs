@@ -8,6 +8,7 @@ pub struct Hit<'a> {
     normal: Vec3,
     distance: f32,
     object: Box<&'a (dyn Primitive + Sync + Send)>,
+    correct_dir: bool,
 }
 
 impl<'a> Hit<'a> {
@@ -16,12 +17,14 @@ impl<'a> Hit<'a> {
         normal: Vec3,
         distance: f32,
         object: Box<&'a (dyn Primitive + Sync + Send)>,
+        correct_dir: bool,
     ) -> Hit {
         Hit {
             pos,
             normal: normal.normalize(),
             distance,
             object,
+            correct_dir,
         }
     }
 
@@ -39,5 +42,9 @@ impl<'a> Hit<'a> {
 
     pub fn get_object(&self) -> Box<&(dyn Primitive + Sync + Send)> {
         Box::new(*self.object)
+    }
+
+    pub fn get_dir(&self) -> bool {
+        self.correct_dir
     }
 }

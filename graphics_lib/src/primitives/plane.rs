@@ -53,9 +53,9 @@ impl Primitive for PlanePrimitive {
         self.material.clone()
     }
 
-    fn intersection(&self, ray: &Ray) -> Option<Hit> {
+    fn intersection(&self, ray: &Ray) -> Vec<Hit> {
         if ray.direction().dot(self.normal).abs() < EPSILON {
-            return None;
+            return vec![];
         }
 
         let t = (self.d - self.normal.dot(ray.position())) / self.normal.dot(ray.direction());
@@ -65,7 +65,13 @@ impl Primitive for PlanePrimitive {
         // TODO: Make this only intersect if going through normal side
         // TODO: Make hit record which way through material it went?
 
-        Some(Hit::new(p, self.normal, t, Box::new(self)))
+        vec![Hit::new(
+            p,
+            self.normal,
+            t,
+            Box::new(self),
+            self.normal.dot(ray.direction()) < 0.,
+        )]
     }
 
     fn clone_dyn(&self) -> Box<dyn Primitive + Sync + Send> {

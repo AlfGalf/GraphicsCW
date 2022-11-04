@@ -56,7 +56,7 @@ impl<'a> Scene {
     ) -> (Color, f32) {
         let mut intersections = self
             .intersection(&ray)
-            .filter(|s| s.get_distance() > 0.)
+            .filter(|s| s.get_dir() && s.get_distance() > 0.)
             .collect::<Vec<Hit>>();
 
         intersections.sort_by(|l, r| l.get_distance().partial_cmp(&r.get_distance()).unwrap());
@@ -113,7 +113,7 @@ impl<'a> Scene {
         self.bvh
             .traverse(&ray.bvh_ray(), &self.primitives)
             .into_iter()
-            .filter_map(move |o| o.primitive.intersection(&ray))
+            .flat_map(move |o| o.primitive.intersection(&ray))
     }
 }
 

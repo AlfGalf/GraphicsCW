@@ -27,7 +27,7 @@ impl Light for DirectionalLight {
 
         if scene
             .intersection(&ray)
-            .filter(|r| r.get_distance() < -EPSILON)
+            .filter(|r| r.get_dir() && r.get_distance() < -EPSILON)
             .next()
             .is_some()
         {

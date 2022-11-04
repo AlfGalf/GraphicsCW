@@ -25,7 +25,9 @@ impl Light for PointLight {
 
         if scene
             .intersection(&ray)
-            .filter(|r| r.get_distance() > 0. && r.get_distance() < distance - EPSILON)
+            .filter(|r| {
+                r.get_dir() && r.get_distance() > 0. && r.get_distance() < distance - EPSILON
+            })
             .next()
             .is_none()
         {

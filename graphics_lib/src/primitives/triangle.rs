@@ -5,6 +5,7 @@ use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use glam::{Mat3, Vec3};
+use std::arch::aarch64::vext_f32;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -79,7 +80,7 @@ impl Primitive for TrianglePrimitive {
         self.material.clone()
     }
 
-    fn intersection(&self, ray: &Ray) -> Option<Hit> {
+    fn intersection(&self, ray: &Ray) -> Vec<Hit> {
         let p0 = self.a;
         let p1 = self.b;
         let p2 = self.c;
@@ -87,7 +88,7 @@ impl Primitive for TrianglePrimitive {
         let normal = self.n;
 
         if ray.direction().dot(normal).abs() < EPSILON {
-            return None;
+            return vec![];
         }
 
         let d = self.d;
@@ -100,18 +101,22 @@ impl Primitive for TrianglePrimitive {
         let v1 = (p - p1).cross(p2 - p1).dot(normal);
         let v2 = (p - p2).cross(p0 - p2).dot(normal);
 
-        if v0 >= -EPSILON && v1 >= -EPSILON && v2 >= -EPSILON {
-            if self.smoothing {
+        let t0 = v0 >= -EPSILON;
+        let t1 = v1 >= -EPSILON;
+        let t2 = v2 >= -EPSILON;
+
+        if t0 == t1 && t1 == t2 {
+            vec![if self.smoothing {
                 let res = self.mat.mul_vec3(p);
 
                 let smoothed_normal = self.an * res.x + self.bn * res.y + self.cn * res.z;
 
-                Some(Hit::new(p, smoothed_normal, t, Box::new(self)))
+                Hit::new(p, smoothed_normal, t, Box::new(self), t0)
             } else {
-                Some(Hit::new(p, normal, t, Box::new(self)))
-            }
+                Hit::new(p, normal, t, Box::new(self), t0)
+            }]
         } else {
-            None
+            vec![]
         }
     }
 

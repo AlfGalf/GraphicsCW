@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 pub trait Primitive: BHShape + Bounded + Debug {
     fn get_material(&self) -> Arc<dyn Material + Sync + Send>;
-    fn intersection(&self, ray: &Ray) -> Option<Hit>;
+    fn intersection(&self, ray: &Ray) -> Vec<Hit>;
     fn clone_dyn(&self) -> Box<dyn Primitive + Sync + Send>;
 }
 
