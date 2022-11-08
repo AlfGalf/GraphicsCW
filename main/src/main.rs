@@ -27,7 +27,11 @@ fn main() {
 
     let mut teapot = PolyMesh::from_file(
         BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
-        Arc::new(CompoundMaterial::new_transparent_material(1.8)),
+        Arc::new(CompoundMaterial::new_transparent_material_opacity(
+            1.8,
+            Color::new(0.7, 1., 0.8),
+            0.02,
+        )),
         // Arc::new(FalseColorMaterial::new()),
         true,
     )

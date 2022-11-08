@@ -76,6 +76,27 @@ impl CompoundMaterial {
             ),
         ])
     }
+
+    pub fn new_transparent_material_opacity(
+        refractive_index: f32,
+        color: Color,
+        opacity: f32,
+    ) -> CompoundMaterial {
+        CompoundMaterial::new(vec![
+            (
+                Box::new(AmbientMaterial::new()),
+                Color::new_grey(DEFAULT_AMBIENT),
+            ),
+            (
+                Box::new(TransparentMaterial::new(refractive_index)),
+                color * ((1. - DEFAULT_AMBIENT) * (1. - opacity)),
+            ),
+            (
+                Box::new(DiffuseMaterial::new()),
+                color * ((1. - DEFAULT_AMBIENT) * (opacity)),
+            ),
+        ])
+    }
 }
 
 impl Material for CompoundMaterial {
