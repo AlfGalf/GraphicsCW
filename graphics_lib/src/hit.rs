@@ -1,24 +1,23 @@
 use crate::primitives::primitive::Primitive;
 use glam::Vec3;
-use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct Hit<'a> {
+pub struct Hit<'scene> {
     pos: Vec3,
     normal: Vec3,
     distance: f32,
-    object: Box<&'a (dyn Primitive + Sync + Send)>,
+    object: &'scene (dyn Primitive + Sync + Send),
     correct_dir: bool,
 }
 
-impl<'a> Hit<'a> {
+impl<'scene> Hit<'scene> {
     pub fn new(
         pos: Vec3,
         normal: Vec3,
         distance: f32,
-        object: Box<&'a (dyn Primitive + Sync + Send)>,
+        object: &'scene (dyn Primitive + Sync + Send + 'scene),
         correct_dir: bool,
-    ) -> Hit {
+    ) -> Hit<'scene> {
         Hit {
             pos,
             normal: normal.normalize(),
@@ -36,12 +35,12 @@ impl<'a> Hit<'a> {
         &self.pos
     }
 
-    pub fn get_distance(&self) -> f32 {
-        self.distance
+    pub fn get_object(&self) -> &'scene (dyn Primitive + Sync + Send) {
+        self.object
     }
 
-    pub fn get_object(&self) -> Box<&(dyn Primitive + Sync + Send)> {
-        Box::new(*self.object)
+    pub fn get_distance(&self) -> f32 {
+        self.distance
     }
 
     pub fn get_dir(&self) -> bool {

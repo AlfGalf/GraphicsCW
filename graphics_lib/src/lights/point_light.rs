@@ -19,12 +19,12 @@ impl PointLight {
 }
 
 impl Light for PointLight {
-    fn get_intensity(&self, point: &Vec3, scene: &Scene) -> Color {
+    fn get_intensity(&self, point: Vec3, scene: &Scene) -> Color {
         let distance = point.distance(self.position);
-        let ray = Ray::new(self.position, (*point - self.position).normalize());
+        let ray = Ray::new(self.position, (point - self.position).normalize());
 
         if scene
-            .intersection(&ray)
+            .intersection(ray)
             .filter(|r| {
                 r.get_dir() && r.get_distance() > 0. && r.get_distance() < distance - EPSILON
             })
@@ -37,7 +37,7 @@ impl Light for PointLight {
         }
     }
 
-    fn get_direction(&self, point: &Vec3) -> Vec3 {
-        (*point - self.position).normalize()
+    fn get_direction(&self, point: Vec3) -> Vec3 {
+        (point - self.position).normalize()
     }
 }

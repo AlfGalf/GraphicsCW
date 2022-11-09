@@ -10,11 +10,11 @@ use crate::materials::trasparent_material::TransparentMaterial;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use std::fmt::Debug;
-use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct CompoundMaterial {
     materials: Vec<(Box<dyn Material + Sync + Send>, Color)>,
+    mat_index: usize,
 }
 
 impl CompoundMaterial {
@@ -29,6 +29,7 @@ impl CompoundMaterial {
                 .into_iter()
                 .map(|(m, c)| (m, (c * scale)))
                 .collect(),
+            mat_index: 0,
         }
     }
 
@@ -100,10 +101,10 @@ impl CompoundMaterial {
 }
 
 impl Material for CompoundMaterial {
-    fn compute(
-        &self,
-        view_ray: &Ray,
-        hit: &Hit,
+    fn compute<'a>(
+        &'a self,
+        view_ray: Ray,
+        hit: &'a Hit<'a>,
         ambient: Color,
         scene: &Scene,
         recurse_depth: usize,
@@ -123,5 +124,16 @@ impl Material for CompoundMaterial {
                     )
                     .scale(c)
             })
+    }
+
+    fn update_mat_index(&mut self, i: usize) {
+        self.materials
+            .iter_mut()
+            .for_each(|m| m.0.update_mat_index(i));
+        self.mat_index = i
+    }
+
+    fn get_mat_index(&self) -> usize {
+        self.mat_index
     }
 }

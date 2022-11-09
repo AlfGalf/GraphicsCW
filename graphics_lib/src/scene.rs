@@ -12,13 +12,13 @@ use bvh::bounding_hierarchy::BHShape;
 use bvh::bvh::BVH;
 use rayon::prelude::*;
 use std::fmt::Debug;
-use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Scene {
-    pub lights: Vec<Box<dyn Light + Sync>>,
+    lights: Vec<Box<dyn Light + Sync>>,
     primitives: Vec<PrimitiveWrapper>,
-    pub camera: Camera,
+    materials: Vec<Box<dyn Material + Sync>>,
+    camera: Camera,
     bvh: BVH,
 }
 
@@ -26,36 +26,50 @@ impl Scene {
     pub fn new(
         objects: Vec<Box<dyn Object + Sync>>,
         lights: Vec<Box<dyn Light + Sync>>,
+        materials: Vec<Box<dyn Material + Sync>>,
         camera: Camera,
     ) -> Scene {
         let mut primitives: Vec<PrimitiveWrapper> = objects
-            .iter()
-            .enumerate()
-            .map(|(i, o)| o.primitives())
+            .into_iter()
+            .map(|o| o.primitives())
             .flatten()
             .map(|p| PrimitiveWrapper { primitive: p })
             .collect();
 
         let bvh = BVH::build(&mut primitives);
 
+        let materials = materials
+            .into_iter()
+            .enumerate()
+            .map(|(i, mut m)| {
+                m.update_mat_index(i);
+                m
+            })
+            .collect();
+
         Scene {
             lights,
             camera,
+            materials,
             primitives,
             bvh,
         }
+    }
+
+    pub fn get_lights(&self) -> &Vec<Box<dyn Light + Sync>> {
+        &self.lights
     }
 }
 
 impl<'a> Scene {
     pub fn calc_ray(
         &self,
-        ray: &Ray,
+        ray: Ray,
         reflection_power: Color,
         reflection_depth: usize,
     ) -> (Color, f32) {
         let mut intersections = self
-            .intersection(&ray)
+            .intersection(ray)
             .filter(|s| s.get_dir() && s.get_distance() > 0.)
             .collect::<Vec<Hit>>();
 
@@ -63,8 +77,8 @@ impl<'a> Scene {
 
         if let Some(v) = intersections.first() {
             (
-                v.get_object().get_material().compute(
-                    &ray,
+                self.materials[v.get_object().get_material()].compute(
+                    ray,
                     &v,
                     Color::new(1., 1., 1.),
                     self,
@@ -92,7 +106,7 @@ impl<'a> Scene {
                             (2. * -(*y as f32) + height as f32) / width as f32,
                         );
 
-                        let res = self.calc_ray(&ray, Color::new(1., 1., 1.), 0);
+                        let res = self.calc_ray(ray, Color::new(1., 1., 1.), 0);
 
                         (x, *y, Pixel::from_color(res.0, res.1))
                     })
@@ -109,7 +123,7 @@ impl<'a> Scene {
         fb
     }
 
-    pub fn intersection(&'a self, ray: &'a Ray) -> impl Iterator<Item = Hit> + 'a {
+    pub fn intersection(&'a self, ray: Ray) -> impl Iterator<Item = Hit<'a>> + 'a {
         self.bvh
             .traverse(&ray.bvh_ray(), &self.primitives)
             .into_iter()
@@ -122,12 +136,12 @@ struct PrimitiveWrapper {
     primitive: Box<dyn Primitive + Sync + Send>,
 }
 
-impl Bounded for PrimitiveWrapper {
+impl<'a> Bounded for PrimitiveWrapper {
     fn aabb(&self) -> AABB {
         self.primitive.aabb()
     }
 }
-impl BHShape for PrimitiveWrapper {
+impl<'a> BHShape for PrimitiveWrapper {
     fn set_bh_node_index(&mut self, n: usize) {
         self.primitive.set_bh_node_index(n)
     }

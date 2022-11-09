@@ -22,11 +22,11 @@ impl DirectionalLight {
 }
 
 impl Light for DirectionalLight {
-    fn get_intensity(&self, point: &Vec3, scene: &Scene) -> Color {
-        let ray = Ray::new(*point, self.direction);
+    fn get_intensity(&self, point: Vec3, scene: &Scene) -> Color {
+        let ray = Ray::new(point, self.direction);
 
         if scene
-            .intersection(&ray)
+            .intersection(ray)
             .filter(|r| r.get_dir() && r.get_distance() < -EPSILON)
             .next()
             .is_some()
@@ -37,7 +37,7 @@ impl Light for DirectionalLight {
         }
     }
 
-    fn get_direction(&self, _: &Vec3) -> Vec3 {
+    fn get_direction(&self, _: Vec3) -> Vec3 {
         self.direction
     }
 }

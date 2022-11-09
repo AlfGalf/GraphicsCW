@@ -1,11 +1,9 @@
 use crate::hit::Hit;
-use crate::materials::material::Material;
 use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use glam::Vec3;
-use std::sync::Arc;
 
 const SCENE_BOUNDS: f32 = 1.0E10;
 const EPSILON: f32 = 0.00001;
@@ -14,16 +12,16 @@ const EPSILON: f32 = 0.00001;
 pub struct PlanePrimitive {
     normal: Vec3,
     d: f32,
-    material: Arc<dyn Material + Sync + Send>,
+    material_index: usize,
     node_index: usize,
 }
 
 impl PlanePrimitive {
-    pub fn new(point: Vec3, normal: Vec3, material: Arc<dyn Material + Sync + Send>) -> Self {
+    pub fn new(point: Vec3, normal: Vec3, material_index: usize) -> Self {
         Self {
             normal,
             d: normal.dot(point),
-            material,
+            material_index,
             node_index: 0,
         }
     }
@@ -49,8 +47,8 @@ impl Bounded for PlanePrimitive {
 }
 
 impl Primitive for PlanePrimitive {
-    fn get_material(&self) -> Arc<dyn Material + Sync + Send> {
-        self.material.clone()
+    fn get_material(&self) -> usize {
+        self.material_index
     }
 
     fn intersection(&self, ray: &Ray) -> Vec<Hit> {
@@ -69,12 +67,8 @@ impl Primitive for PlanePrimitive {
             p,
             self.normal,
             t,
-            Box::new(self),
+            self,
             self.normal.dot(ray.direction()) < 0.,
         )]
-    }
-
-    fn clone_dyn(&self) -> Box<dyn Primitive + Sync + Send> {
-        Box::new(self.clone())
     }
 }

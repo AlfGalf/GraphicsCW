@@ -1,13 +1,9 @@
 use crate::hit::Hit;
-use crate::materials::material::Material;
 use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use glam::{Mat3, Vec3};
-use std::arch::aarch64::vext_f32;
-use std::rc::Rc;
-use std::sync::Arc;
 
 const EPSILON: f32 = 0.00001;
 
@@ -23,7 +19,7 @@ pub struct TrianglePrimitive {
     mat: Mat3,
     d: f32,
     smoothing: bool,
-    material: Arc<dyn Material + Sync + Send>,
+    material: usize,
     node_index: usize,
 }
 
@@ -37,7 +33,7 @@ impl TrianglePrimitive {
         bn: Vec3,
         cn: Vec3,
         smoothing: bool,
-        material: Arc<dyn Material + Sync + Send>,
+        material: usize,
     ) -> TrianglePrimitive {
         TrianglePrimitive {
             a,
@@ -76,8 +72,8 @@ impl Bounded for TrianglePrimitive {
 }
 
 impl Primitive for TrianglePrimitive {
-    fn get_material(&self) -> Arc<dyn Material + Sync + Send> {
-        self.material.clone()
+    fn get_material(&self) -> usize {
+        self.material
     }
 
     fn intersection(&self, ray: &Ray) -> Vec<Hit> {
@@ -115,24 +111,14 @@ impl Primitive for TrianglePrimitive {
                     p,
                     smoothed_normal,
                     t,
-                    Box::new(self),
+                    self,
                     normal.dot(ray.direction()) < 0.,
                 )
             } else {
-                Hit::new(
-                    p,
-                    normal,
-                    t,
-                    Box::new(self),
-                    normal.dot(ray.direction()) < 0.,
-                )
+                Hit::new(p, normal, t, self, normal.dot(ray.direction()) < 0.)
             }]
         } else {
             vec![]
         }
-    }
-
-    fn clone_dyn(&self) -> Box<dyn Primitive + Sync + Send> {
-        Box::new(self.clone())
     }
 }

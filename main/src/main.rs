@@ -6,8 +6,7 @@ use graphics_lib::color::Color;
 use graphics_lib::lights::directional_light::DirectionalLight;
 use graphics_lib::lights::point_light::PointLight;
 use graphics_lib::materials::compound_material::CompoundMaterial;
-use graphics_lib::materials::diffuse_material::DiffuseMaterial;
-use graphics_lib::materials::false_color_material::FalseColorMaterial;
+use graphics_lib::materials::material::Material;
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
 use graphics_lib::objects::poly_mesh::PolyMesh;
@@ -16,9 +15,70 @@ use graphics_lib::scene::Scene;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
-use std::sync::Arc;
 
 fn main() {
+    let materials: Vec<Box<dyn Material + Sync>> = vec![
+        Box::new(CompoundMaterial::new_transparent_material_opacity(
+            // 0 -> transparent grey
+            1.05,
+            Color::new(0.7, 0.7, 0.7),
+            0.17,
+        )),
+        Box::new(CompoundMaterial::new_reflective_material(
+            // 1 -> reflective slight green
+            Color::new(0.7, 0.8, 0.7),
+            0.3,
+        )),
+        Box::new(CompoundMaterial::new_reflective_material(
+            // 2 -> Red shiny
+            Color::new(1., 0.6, 0.6) * 0.8,
+            0.7,
+        )),
+        Box::new(
+            CompoundMaterial::new_transparent_material(1.4), // 3 -> Transparent
+        ),
+        Box::new(CompoundMaterial::new_matte_material(
+            // 4 -> Matte blue
+            Color::new(0.5, 0.5, 1.0) * 0.7,
+            0.2,
+        )),
+        Box::new(CompoundMaterial::new_reflective_material(
+            // 5 -> dark slightly reflective
+            Color::new(0.2, 0.2, 0.2),
+            0.1,
+        )),
+        Box::new(CompoundMaterial::new_reflective_material(
+            // 6 -> light grey reflective
+            Color::new(0.5, 0.5, 0.5),
+            0.4,
+        )),
+        Box::new(CompoundMaterial::new_matte_material(
+            // 7 -> blue matte
+            Color::new(0.3, 0.3, 0.8),
+            0.4,
+        )),
+        Box::new(CompoundMaterial::new_reflective_material(
+            // 8 -> blue slightly reflective
+            Color::new(0.8, 0.3, 0.3),
+            0.3,
+        )),
+        Box::new(CompoundMaterial::new_matte_material(
+            // 9 -> grey matte
+            Color::new(0.5, 0.5, 0.5),
+            0.4,
+        )),
+        Box::new(CompoundMaterial::new_matte_material(
+            // 10 -> green matte
+            Color::new(0.5, 0.7, 0.5),
+            0.4,
+        )),
+        Box::new(CompoundMaterial::new_matte_material(
+            // 11 -> purple matte
+            Color::new(0.7, 0.5, 0.7),
+            0.4,
+        )),
+    ];
+
     let mut file = fs::OpenOptions::new()
         .write(true)
         .create(true)
@@ -27,12 +87,7 @@ fn main() {
 
     let mut teapot = PolyMesh::from_file(
         BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
-        Arc::new(CompoundMaterial::new_transparent_material_opacity(
-            1.8,
-            Color::new(0.7, 1., 0.8),
-            0.02,
-        )),
-        // Arc::new(FalseColorMaterial::new()),
+        0,
         true,
     )
     .unwrap();
@@ -41,43 +96,47 @@ fn main() {
         1.0, 0.0, 0.0, //1
         0.0, 0.0, 1.0, //2
         0.0, 1.0, 0.0, // 3
-        -1.0, -2.0, -1.0, //
+        -0.0, -2.0, -6.0, //
+    ]));
+
+    let mut castle = PolyMesh::from_file(
+        BufReader::new(File::open("../castle.kcply").unwrap()),
+        1,
+        false,
+    )
+    .unwrap();
+
+    castle.apply_transform(&Affine3A::from_cols_array(&[
+        0.03, 0.0, 0.0, //1
+        0.0, 0.0, 0.03, //2
+        0.0, 0.03, 0.0, // 3
+        -1.0, -2.0, -2.0, //
     ]));
 
     let sphere = Sphere::new(
         Vec3::new(1., 1., -0.5),
         1.,
-        Arc::new(CompoundMaterial::new_reflective_material(
-            Color::new(1., 0.6, 0.6) * 0.8,
-            0.7,
-        )),
+        2,
         // FalseColorMaterial::new(),
     );
 
     let sphere3 = Sphere::new(
         Vec3::new(3.5, 2.5, -1.),
         1.,
-        Arc::new(CompoundMaterial::new_transparent_material(1.8)),
+        3,
         // FalseColorMaterial::new(),
     );
 
     let sphere2 = Sphere::new(
-        Vec3::new(3.5, 0.0, 0.),
+        Vec3::new(-1.5, 0.0, 0.),
         1.,
-        Arc::new(CompoundMaterial::new_matte_material(
-            Color::new(0.5, 0.5, 1.0) * 0.7,
-            0.2,
-        )),
-        // FalseColorMaterial::new(),
+        4, // FalseColorMaterial::new(),
     );
 
     let plane_bottom = Plane::new(
         Vec3::new(0., -2., 0.),
         Vec3::new(0., 1., 0.),
-        Arc::new(CompoundMaterial::new_reflective_material(
-            Color::new(0.2, 0.2, 0.2),
-            0.1,
-        )),
+        5,
         // FalseColorMaterial::new(),
     );
 
@@ -85,57 +144,35 @@ fn main() {
         Vec3::new(0., 0., 4.),
         Vec3::new(0., 0., -1.),
         // FalseColorMaterial::new(),
-        Arc::new(CompoundMaterial::new_reflective_material(
-            Color::new(0.5, 0.5, 0.5),
-            0.4,
-        )),
+        11,
     );
 
     let plane_left = Plane::new(
         Vec3::new(-4., 0., 0.),
         Vec3::new(1., 0., 0.),
         // FalseColorMaterial::new(),
-        Arc::new(CompoundMaterial::new_matte_material(
-            Color::new(0.3, 0.3, 0.8),
-            0.4,
-        )),
+        7,
     );
 
     let plane_right = Plane::new(
         Vec3::new(6., 0., 0.),
         Vec3::new(-1., 0., 0.),
         // FalseColorMaterial::new(),
-        Arc::new(CompoundMaterial::new_reflective_material(
-            Color::new(0.8, 0.3, 0.3),
-            0.3,
-        )),
+        8,
     );
 
     let plane_top = Plane::new(
         Vec3::new(0., 4., 0.),
         Vec3::new(0., -1., 0.),
         // FalseColorMaterial::new(),
-        Arc::new(CompoundMaterial::new_matte_material(
-            Color::new(0.5, 0.5, 0.5),
-            0.4,
-        )),
+        9,
     );
 
     let plane_front = Plane::new(
         Vec3::new(0., 0., -25.),
         Vec3::new(0., 0., 1.),
         // FalseColorMaterial::new(),
-        Arc::new(CompoundMaterial::new_matte_material(
-            Color::new(0.5, 0.5, 0.5),
-            0.4,
-        )),
-    );
-
-    let diffuse_sphere = Sphere::new(
-        Vec3::new(1., 1., -0.5),
-        1.,
-        Arc::new(DiffuseMaterial::new()),
-        // FalseColorMaterial::new(),
+        9,
     );
 
     let light = PointLight::new(Vec3::new(-2.0, 4.0, -7.0), Color::new(0.9, 0.8, 0.85));
@@ -155,13 +192,14 @@ fn main() {
             Box::new(plane_top),
             Box::new(plane_bottom),
             Box::new(plane_front),
+            Box::new(castle),
         ],
         vec![
             Box::new(light),
             Box::new(light2),
             // Box::new(dir_light)
-            //
         ],
+        materials,
         Camera::new(
             Vec3::new(0., 0., -20.),
             Vec3::new(0.05, 0.0, 1.0),
@@ -170,7 +208,7 @@ fn main() {
         ),
     );
 
-    let fb = scene.render(960, 540);
+    let fb = scene.render(512, 512);
 
     File::write_all(&mut file, &(fb.to_rgb_file())).unwrap();
 }

@@ -1,12 +1,9 @@
-use crate::materials::material::Material;
 use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::triangle::TrianglePrimitive;
 use glam::{Affine3A, Vec3};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::rc::Rc;
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Triangle {
@@ -67,13 +64,13 @@ pub struct PolyMesh {
     pub triangles: Vec<Triangle>,
     vertices: Vec<Vertex>,
     smoothing: bool,
-    material: Arc<dyn Material + Sync + Send>,
+    material: usize,
 }
 
 impl PolyMesh {
     pub fn from_file(
         file: BufReader<File>,
-        material: Arc<dyn Material + Sync + Send>,
+        material: usize,
         smooth: bool,
     ) -> Result<PolyMesh, &'static str> {
         let mut lines = file.lines();
@@ -238,8 +235,8 @@ impl Object for PolyMesh {
         }
     }
 
-    fn get_material(&self) -> Arc<dyn Material + Sync + Send> {
-        self.material.clone()
+    fn get_material(&self) -> usize {
+        self.material
     }
 
     fn primitives(&self) -> Vec<Box<dyn Primitive + Sync + Send>> {
@@ -259,7 +256,7 @@ impl Object for PolyMesh {
                     vb.normal.unwrap(),
                     vc.normal.unwrap(),
                     self.smoothing,
-                    self.material.clone(),
+                    self.material,
                 ))
             })
             .collect()
