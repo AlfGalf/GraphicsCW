@@ -30,7 +30,7 @@ impl Object for Plane {
         self.normal = t.transform_vector3(self.normal);
     }
 
-    fn get_material(&self) -> usize {
+    fn get_material(&self, _: &Hit) -> usize {
         self.material
     }
 

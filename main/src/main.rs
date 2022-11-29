@@ -124,13 +124,13 @@ fn main() {
     let sphere2 = Sphere::new(
         Vec3::new(0.2, 1.0, 0.),
         1.,
-        4, // FalseColorMaterial::new(),
+        0, // FalseColorMaterial::new(),
     );
 
     let sphere3 = Sphere::new(
-        Vec3::new(0., 0.8, 0.),
-        1.,
-        4,
+        Vec3::new(0., 0.7, -0.8),
+        0.4,
+        100,
         // FalseColorMaterial::new(),
     );
 
@@ -178,16 +178,14 @@ fn main() {
 
     // let union = CSG::new(CSGType::Union, Box::new(sphere), Box::new(sphere2), 0);
     let intersection = CSG::new(
-        CSGType::Union,
+        CSGType::Subtract,
         // Box::new(sphere),
         Box::new(CSG::new(
             CSGType::Union,
             Box::new(sphere),
             Box::new(sphere2),
-            1,
         )),
         Box::new(sphere3),
-        1,
     );
 
     let light = PointLight::new(Vec3::new(-2.0, 4.0, -7.0), Color::new(0.9, 0.8, 0.85));

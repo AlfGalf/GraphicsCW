@@ -83,7 +83,7 @@ impl<'a> Scene {
 
         if let Some(v) = intersections.first() {
             (
-                self.materials[self.objects[v.get_object_index()].get_material()].compute(
+                self.materials[self.objects[v.get_object_index()].get_material(v)].compute(
                     ray,
                     &v,
                     Color::new(1., 1., 1.),

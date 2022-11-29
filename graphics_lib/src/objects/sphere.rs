@@ -28,7 +28,7 @@ impl Object for Sphere {
         self.center = t.transform_point3(self.center);
     }
 
-    fn get_material(&self) -> usize {
+    fn get_material(&self, _: &Hit) -> usize {
         self.material
     }
 

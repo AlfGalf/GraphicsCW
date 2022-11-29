@@ -238,7 +238,7 @@ impl Object for PolyMesh {
         }
     }
 
-    fn get_material(&self) -> usize {
+    fn get_material(&self, _: &Hit) -> usize {
         self.material
     }
 

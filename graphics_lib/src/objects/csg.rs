@@ -9,6 +9,7 @@ use std::net::Shutdown::Read;
 pub enum CSGType {
     Union,
     Intersection,
+    Subtract,
 }
 
 #[derive(Debug)]
@@ -16,7 +17,6 @@ pub struct CSG {
     csg_type: CSGType,
     left: Box<dyn Object + Sync>,
     right: Box<dyn Object + Sync>,
-    material: usize,
     csg_index: usize,
 }
 
@@ -25,13 +25,11 @@ impl CSG {
         csg_type: CSGType,
         left: Box<dyn Object + Sync>,
         right: Box<dyn Object + Sync>,
-        material: usize,
     ) -> Self {
         Self {
             csg_type,
             left,
             right,
-            material,
             csg_index: 0,
         }
     }
@@ -43,8 +41,21 @@ impl Object for CSG {
         self.right.apply_transform(t);
     }
 
-    fn get_material(&self) -> usize {
-        self.material
+    fn get_material(&self, hit: &Hit) -> usize {
+        match self.csg_type {
+            CSGType::Subtract => self.left.get_material(hit),
+            _ => {
+                if let Some(is_left) = is_node_left(self.csg_index, hit.get_csg_index()) {
+                    if is_left {
+                        self.left.get_material(hit)
+                    } else {
+                        self.right.get_material(hit)
+                    }
+                } else {
+                    self.left.get_material(hit)
+                }
+            }
+        }
     }
 
     fn set_csg_index(&mut self, csg_index: usize) {
@@ -98,7 +109,19 @@ impl Object for CSG {
                                 } else if !h.get_dir() && (!inside_left || !inside_right) {
                                     Some(h)
                                 } else {
-                                    // Some(h)
+                                    None
+                                }
+                            }
+                            CSGType::Subtract => {
+                                if !side {
+                                    h.flip()
+                                };
+
+                                if h.get_dir() && (inside_left && !inside_right) {
+                                    Some(h)
+                                } else if !h.get_dir() && (!inside_left || inside_right) {
+                                    Some(h)
+                                } else {
                                     None
                                 }
                             }

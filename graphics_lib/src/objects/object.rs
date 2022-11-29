@@ -6,7 +6,7 @@ use std::fmt::Debug;
 pub trait Object: Debug {
     fn apply_transform(&mut self, t: &Affine3A);
 
-    fn get_material(&self) -> usize;
+    fn get_material(&self, hit: &Hit) -> usize;
 
     fn set_csg_index(&mut self, csg_index: usize);
 

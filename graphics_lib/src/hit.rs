@@ -54,7 +54,8 @@ impl Hit {
         self.csg_index
     }
 
-    pub fn set_dir(&mut self, dir: bool) {
-        self.correct_dir = dir
+    pub fn flip(&mut self) {
+        self.correct_dir = !self.correct_dir;
+        self.normal = -self.normal;
     }
 }
