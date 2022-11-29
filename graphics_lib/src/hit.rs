@@ -53,4 +53,8 @@ impl Hit {
     pub fn get_csg_index(&self) -> usize {
         self.csg_index
     }
+
+    pub fn set_dir(&mut self, dir: bool) {
+        self.correct_dir = dir
+    }
 }

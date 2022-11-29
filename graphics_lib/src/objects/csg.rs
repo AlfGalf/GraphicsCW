@@ -3,10 +3,12 @@ use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use glam::Affine3A;
 use std::fmt::Debug;
+use std::net::Shutdown::Read;
 
 #[derive(Debug)]
 pub enum CSGType {
     Union,
+    Intersection,
 }
 
 #[derive(Debug)]
@@ -57,15 +59,70 @@ impl Object for CSG {
         a
     }
 
+    // TODO: Sort out the materials
     fn filter_hits<'a>(&self, hits: Vec<Hit>, index: usize) -> Vec<Hit> {
-        match self.csg_type {
-            CSGType::Union => {
-                let output = hits
-                    .into_iter()
-                    .filter(|h| h.get_object_index() == index || { true })
-                    .collect();
-                output
-            }
-        }
+        let hits = self.left.filter_hits(hits, index);
+        let hits = self.right.filter_hits(hits, index);
+
+        let mut inside_left = false;
+        let mut inside_right = false;
+
+        let output = hits
+            .into_iter()
+            .filter_map(|mut h| {
+                if !(h.get_object_index() == index) {
+                    Some(h)
+                } else {
+                    if let Some(side) = is_node_left(self.csg_index, h.get_csg_index()) {
+                        if side {
+                            // Left case
+                            inside_left = h.get_dir();
+                        } else {
+                            // Right case
+                            inside_right = h.get_dir();
+                        };
+
+                        match self.csg_type {
+                            CSGType::Union => {
+                                if h.get_dir() && (inside_left || inside_right) {
+                                    Some(h)
+                                } else if !h.get_dir() && !inside_left && !inside_right {
+                                    Some(h)
+                                } else {
+                                    None
+                                }
+                            }
+                            CSGType::Intersection => {
+                                if h.get_dir() && inside_left && inside_right {
+                                    Some(h)
+                                } else if !h.get_dir() && (!inside_left || !inside_right) {
+                                    Some(h)
+                                } else {
+                                    // Some(h)
+                                    None
+                                }
+                            }
+                        }
+                    } else {
+                        Some(h)
+                    }
+                }
+            })
+            .collect();
+        output
     }
+}
+
+fn is_node_left(parent: usize, child: usize) -> Option<bool> {
+    let mut current = child;
+    while current > parent {
+        if parent * 2 == current {
+            return Some(true);
+        }
+        if parent * 2 + 1 == current {
+            return Some(false);
+        }
+        current = current / 2;
+    }
+    None
 }

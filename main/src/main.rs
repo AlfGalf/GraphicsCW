@@ -7,6 +7,7 @@ use graphics_lib::lights::directional_light::DirectionalLight;
 use graphics_lib::lights::point_light::PointLight;
 use graphics_lib::materials::compound_material::CompoundMaterial;
 use graphics_lib::materials::material::Material;
+use graphics_lib::objects::csg::{CSGType, CSG};
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
 use graphics_lib::objects::poly_mesh::PolyMesh;
@@ -114,23 +115,23 @@ fn main() {
     ]));
 
     let sphere = Sphere::new(
-        Vec3::new(1., 1., -0.5),
+        Vec3::new(-0.2, 1.0, 0.),
         1.,
-        2,
-        // FalseColorMaterial::new(),
-    );
-
-    let sphere3 = Sphere::new(
-        Vec3::new(3.5, 2.5, -1.),
-        1.,
-        3,
+        0,
         // FalseColorMaterial::new(),
     );
 
     let sphere2 = Sphere::new(
-        Vec3::new(-1.5, 0.0, 0.),
+        Vec3::new(0.2, 1.0, 0.),
         1.,
         4, // FalseColorMaterial::new(),
+    );
+
+    let sphere3 = Sphere::new(
+        Vec3::new(0., 0.8, 0.),
+        1.,
+        4,
+        // FalseColorMaterial::new(),
     );
 
     let plane_bottom = Plane::new(
@@ -175,6 +176,20 @@ fn main() {
         9,
     );
 
+    // let union = CSG::new(CSGType::Union, Box::new(sphere), Box::new(sphere2), 0);
+    let intersection = CSG::new(
+        CSGType::Union,
+        // Box::new(sphere),
+        Box::new(CSG::new(
+            CSGType::Union,
+            Box::new(sphere),
+            Box::new(sphere2),
+            1,
+        )),
+        Box::new(sphere3),
+        1,
+    );
+
     let light = PointLight::new(Vec3::new(-2.0, 4.0, -7.0), Color::new(0.9, 0.8, 0.85));
     let light2 = PointLight::new(Vec3::new(4.0, 4.0, -15.0), Color::new(0.8, 0.9, 0.85));
     let dir_light = DirectionalLight::new(Vec3::new(2.0, -4.0, 2.0), Color::new(0.9, 0.8, 0.85));
@@ -182,17 +197,18 @@ fn main() {
     let scene = Scene::new(
         vec![
             // Box::new(diffuse_sphere),
-            Box::new(teapot),
-            Box::new(sphere),
-            Box::new(sphere2),
-            Box::new(sphere3),
+            // Box::new(teapot),
+            // Box::new(sphere),
+            // Box::new(sphere2),
+            // Box::new(sphere3),
+            Box::new(intersection),
             Box::new(plane_back),
             Box::new(plane_right),
             Box::new(plane_left),
             Box::new(plane_top),
             Box::new(plane_bottom),
             Box::new(plane_front),
-            Box::new(castle),
+            // Box::new(castle),
         ],
         vec![
             Box::new(light),

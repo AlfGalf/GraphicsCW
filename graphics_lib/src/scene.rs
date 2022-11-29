@@ -81,8 +81,6 @@ impl<'a> Scene {
             .filter(|s| s.get_dir() && s.get_distance() > 0.)
             .collect::<Vec<Hit>>();
 
-        intersections.sort_by(|l, r| l.get_distance().partial_cmp(&r.get_distance()).unwrap());
-
         if let Some(v) = intersections.first() {
             (
                 self.materials[self.objects[v.get_object_index()].get_material()].compute(
@@ -137,14 +135,17 @@ impl<'a> Scene {
             .traverse(&ray.bvh_ray(), &self.primitives)
             .into_iter()
             .flat_map(move |o| {
-                let obj = self.objects.get(o.primitive.get_object()).unwrap();
                 let hits = o.primitive.intersection(&ray);
                 hits
             })
             .collect::<Vec<Hit>>();
+
+        hits.sort_by(|l, r| l.get_distance().partial_cmp(&r.get_distance()).unwrap());
+
         for (i, o) in self.objects.iter().enumerate() {
             hits = o.filter_hits(hits, i);
         }
+
         hits.into_iter()
     }
 }
