@@ -21,6 +21,8 @@ pub struct TrianglePrimitive {
     smoothing: bool,
     material: usize,
     node_index: usize,
+    obj_index: usize,
+    csg_index: usize,
 }
 
 impl TrianglePrimitive {
@@ -34,6 +36,8 @@ impl TrianglePrimitive {
         cn: Vec3,
         smoothing: bool,
         material: usize,
+        obj_index: usize,
+        csg_index: usize,
     ) -> TrianglePrimitive {
         TrianglePrimitive {
             a,
@@ -48,6 +52,8 @@ impl TrianglePrimitive {
             material,
             smoothing,
             node_index: 0,
+            obj_index,
+            csg_index,
         }
     }
 }
@@ -72,8 +78,12 @@ impl Bounded for TrianglePrimitive {
 }
 
 impl Primitive for TrianglePrimitive {
-    fn get_material(&self) -> usize {
-        self.material
+    fn get_object(&self) -> usize {
+        self.obj_index
+    }
+
+    fn get_csg_index(&self) -> usize {
+        self.csg_index
     }
 
     fn intersection(&self, ray: &Ray) -> Vec<Hit> {
@@ -111,11 +121,19 @@ impl Primitive for TrianglePrimitive {
                     p,
                     smoothed_normal,
                     t,
-                    self,
                     normal.dot(ray.direction()) < 0.,
+                    self.obj_index,
+                    self.csg_index,
                 )
             } else {
-                Hit::new(p, normal, t, self, normal.dot(ray.direction()) < 0.)
+                Hit::new(
+                    p,
+                    normal,
+                    t,
+                    normal.dot(ray.direction()) < 0.,
+                    self.obj_index,
+                    self.csg_index,
+                )
             }]
         } else {
             vec![]

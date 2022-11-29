@@ -18,6 +18,7 @@ pub struct Scene {
     lights: Vec<Box<dyn Light + Sync>>,
     primitives: Vec<PrimitiveWrapper>,
     materials: Vec<Box<dyn Material + Sync>>,
+    objects: Vec<Box<dyn Object + Sync>>,
     camera: Camera,
     bvh: BVH,
 }
@@ -29,9 +30,15 @@ impl Scene {
         materials: Vec<Box<dyn Material + Sync>>,
         camera: Camera,
     ) -> Scene {
+        let mut objects = objects;
+        for o in objects.iter_mut() {
+            o.set_csg_index(1);
+        }
+
         let mut primitives: Vec<PrimitiveWrapper> = objects
-            .into_iter()
-            .map(|o| o.primitives())
+            .iter()
+            .enumerate()
+            .map(|(i, o)| o.primitives(i))
             .flatten()
             .map(|p| PrimitiveWrapper { primitive: p })
             .collect();
@@ -52,6 +59,7 @@ impl Scene {
             camera,
             materials,
             primitives,
+            objects,
             bvh,
         }
     }
@@ -77,7 +85,7 @@ impl<'a> Scene {
 
         if let Some(v) = intersections.first() {
             (
-                self.materials[v.get_object().get_material()].compute(
+                self.materials[self.objects[v.get_object_index()].get_material()].compute(
                     ray,
                     &v,
                     Color::new(1., 1., 1.),
@@ -123,11 +131,21 @@ impl<'a> Scene {
         fb
     }
 
-    pub fn intersection(&'a self, ray: Ray) -> impl Iterator<Item = Hit<'a>> + 'a {
-        self.bvh
+    pub fn intersection(&'a self, ray: Ray) -> impl Iterator<Item = Hit> + 'a {
+        let mut hits = self
+            .bvh
             .traverse(&ray.bvh_ray(), &self.primitives)
             .into_iter()
-            .flat_map(move |o| o.primitive.intersection(&ray))
+            .flat_map(move |o| {
+                let obj = self.objects.get(o.primitive.get_object()).unwrap();
+                let hits = o.primitive.intersection(&ray);
+                hits
+            })
+            .collect::<Vec<Hit>>();
+        for (i, o) in self.objects.iter().enumerate() {
+            hits = o.filter_hits(hits, i);
+        }
+        hits.into_iter()
     }
 }
 

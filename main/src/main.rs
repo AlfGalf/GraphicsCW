@@ -20,7 +20,7 @@ fn main() {
     let materials: Vec<Box<dyn Material + Sync>> = vec![
         Box::new(CompoundMaterial::new_transparent_material_opacity(
             // 0 -> transparent grey
-            1.05,
+            1.04,
             Color::new(0.7, 0.7, 0.7),
             0.17,
         )),

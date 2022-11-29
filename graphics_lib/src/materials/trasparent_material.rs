@@ -26,13 +26,12 @@ impl<'a> TransparentMaterial {
         scene: &Scene,
         recurse_power: Color,
         recurse_depth: usize,
+        obj_index: usize,
     ) -> Color {
         let mut intersections = scene
             .intersection(ray)
             .filter(|h| {
-                (!h.get_dir())
-                    && h.get_distance() > EPSILON
-                    && h.get_object().get_material() == self.mat_index
+                (!h.get_dir()) && h.get_distance() > EPSILON && h.get_object_index() == obj_index
             })
             .collect::<Vec<Hit>>();
 
@@ -48,7 +47,8 @@ impl<'a> TransparentMaterial {
             let refl_part = if refl_power.max_val() > MIN_RECURSE_COEFFICIENT
                 && recurse_depth < MAX_RECURSE_DEPTH
             {
-                self.calc_internal_ray(refl_ray, scene, refl_power, recurse_depth + 1) * refl_coeff
+                self.calc_internal_ray(refl_ray, scene, refl_power, recurse_depth + 1, obj_index)
+                    * refl_coeff
                 // scene.calc_ray(refl_ray, refl_power, recurse_depth + 1).0 * refl_coeff
             } else {
                 Color::new_black()
@@ -127,7 +127,7 @@ impl Material for TransparentMaterial {
     fn compute<'a>(
         &'a self,
         view_ray: Ray,
-        hit: &'a Hit<'a>,
+        hit: &'a Hit,
         _: Color,
         scene: &Scene,
         recurse_depth: usize,
@@ -150,8 +150,13 @@ impl Material for TransparentMaterial {
         let trans_part = if trans_power.max_val() > MIN_RECURSE_COEFFICIENT
             && recurse_depth < MAX_RECURSE_DEPTH
         {
-            self.calc_internal_ray(trans_ray.unwrap(), scene, trans_power, recurse_depth)
-                * trans_coeff
+            self.calc_internal_ray(
+                trans_ray.unwrap(),
+                scene,
+                trans_power,
+                recurse_depth,
+                hit.get_object_index(),
+            ) * trans_coeff
         } else {
             Color::new_black()
         };

@@ -2,28 +2,31 @@ use crate::primitives::primitive::Primitive;
 use glam::Vec3;
 
 #[derive(Clone)]
-pub struct Hit<'scene> {
+pub struct Hit {
     pos: Vec3,
     normal: Vec3,
     distance: f32,
-    object: &'scene (dyn Primitive + Sync + Send),
+    obj_index: usize,
     correct_dir: bool,
+    csg_index: usize,
 }
 
-impl<'scene> Hit<'scene> {
+impl Hit {
     pub fn new(
         pos: Vec3,
         normal: Vec3,
         distance: f32,
-        object: &'scene (dyn Primitive + Sync + Send + 'scene),
         correct_dir: bool,
-    ) -> Hit<'scene> {
+        obj_index: usize,
+        csg_index: usize,
+    ) -> Hit {
         Hit {
             pos,
             normal: normal.normalize(),
             distance,
-            object,
             correct_dir,
+            obj_index,
+            csg_index,
         }
     }
 
@@ -35,8 +38,8 @@ impl<'scene> Hit<'scene> {
         &self.pos
     }
 
-    pub fn get_object(&self) -> &'scene (dyn Primitive + Sync + Send) {
-        self.object
+    pub fn get_object_index(&self) -> usize {
+        self.obj_index
     }
 
     pub fn get_distance(&self) -> f32 {
@@ -45,5 +48,9 @@ impl<'scene> Hit<'scene> {
 
     pub fn get_dir(&self) -> bool {
         self.correct_dir
+    }
+
+    pub fn get_csg_index(&self) -> usize {
+        self.csg_index
     }
 }

@@ -1,3 +1,4 @@
+use crate::hit::Hit;
 use crate::objects::object::Object;
 use crate::primitives::plane::PlanePrimitive;
 use crate::primitives::primitive::Primitive;
@@ -9,6 +10,7 @@ pub struct Plane {
     point: Vec3,
     normal: Vec3,
     material: usize,
+    csg_index: usize,
 }
 
 impl Plane {
@@ -17,6 +19,7 @@ impl Plane {
             point,
             normal: normal.normalize(),
             material,
+            csg_index: 0,
         }
     }
 }
@@ -31,11 +34,21 @@ impl Object for Plane {
         self.material
     }
 
-    fn primitives(&self) -> Vec<Box<dyn Primitive + Sync + Send>> {
+    fn set_csg_index(&mut self, csg_index: usize) {
+        self.csg_index = 0
+    }
+
+    fn primitives(&self, obj_index: usize) -> Vec<Box<dyn Primitive + Sync + Send>> {
         vec![Box::new(PlanePrimitive::new(
             self.point,
             self.normal,
             self.material,
+            obj_index,
+            self.csg_index,
         ))]
+    }
+
+    fn filter_hits(&self, hits: Vec<Hit>, _: usize) -> Vec<Hit> {
+        hits
     }
 }

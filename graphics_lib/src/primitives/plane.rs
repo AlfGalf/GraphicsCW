@@ -14,15 +14,25 @@ pub struct PlanePrimitive {
     d: f32,
     material_index: usize,
     node_index: usize,
+    obj_index: usize,
+    csg_index: usize,
 }
 
 impl PlanePrimitive {
-    pub fn new(point: Vec3, normal: Vec3, material_index: usize) -> Self {
+    pub fn new(
+        point: Vec3,
+        normal: Vec3,
+        material_index: usize,
+        obj_index: usize,
+        csg_index: usize,
+    ) -> Self {
         Self {
             normal,
             d: normal.dot(point),
             material_index,
             node_index: 0,
+            obj_index,
+            csg_index,
         }
     }
 }
@@ -47,8 +57,12 @@ impl Bounded for PlanePrimitive {
 }
 
 impl Primitive for PlanePrimitive {
-    fn get_material(&self) -> usize {
-        self.material_index
+    fn get_object(&self) -> usize {
+        self.obj_index
+    }
+
+    fn get_csg_index(&self) -> usize {
+        self.csg_index
     }
 
     fn intersection(&self, ray: &Ray) -> Vec<Hit> {
@@ -67,8 +81,9 @@ impl Primitive for PlanePrimitive {
             p,
             self.normal,
             t,
-            self,
             self.normal.dot(ray.direction()) < 0.,
+            self.obj_index,
+            self.csg_index,
         )]
     }
 }

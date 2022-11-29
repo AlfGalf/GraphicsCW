@@ -11,15 +11,25 @@ pub struct SpherePrimitive {
     rad: f32,
     material: usize,
     node_index: usize,
+    obj_index: usize,
+    csg_index: usize,
 }
 
 impl SpherePrimitive {
-    pub(crate) fn new(center: Vec3, rad: f32, material: usize) -> Self {
+    pub(crate) fn new(
+        center: Vec3,
+        rad: f32,
+        material: usize,
+        obj_index: usize,
+        csg_index: usize,
+    ) -> Self {
         Self {
             center,
             rad,
             material,
             node_index: 0,
+            obj_index,
+            csg_index,
         }
     }
 }
@@ -41,8 +51,12 @@ impl Bounded for SpherePrimitive {
 }
 
 impl Primitive for SpherePrimitive {
-    fn get_material(&self) -> usize {
-        self.material
+    fn get_object(&self) -> usize {
+        self.obj_index
+    }
+
+    fn get_csg_index(&self) -> usize {
+        self.csg_index
     }
 
     fn intersection(&self, ray: &Ray) -> Vec<Hit> {
@@ -68,13 +82,21 @@ impl Primitive for SpherePrimitive {
             // TODO: May need to rejig this for rarefaction, light coming in other side
 
             vec![
-                Hit::new(pos1, (pos1 - self.center).normalize(), t_first, self, true),
+                Hit::new(
+                    pos1,
+                    (pos1 - self.center).normalize(),
+                    t_first,
+                    true,
+                    self.obj_index,
+                    self.csg_index,
+                ),
                 Hit::new(
                     pos2,
                     (pos2 - self.center).normalize(),
                     t_second,
-                    self,
                     false,
+                    self.obj_index,
+                    self.csg_index,
                 ),
             ]
         }

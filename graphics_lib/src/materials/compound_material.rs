@@ -104,7 +104,7 @@ impl Material for CompoundMaterial {
     fn compute<'a>(
         &'a self,
         view_ray: Ray,
-        hit: &'a Hit<'a>,
+        hit: &'a Hit,
         ambient: Color,
         scene: &Scene,
         recurse_depth: usize,

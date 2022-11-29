@@ -1,3 +1,4 @@
+use crate::hit::Hit;
 use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::sphere::SpherePrimitive;
@@ -8,6 +9,7 @@ pub struct Sphere {
     center: Vec3,
     rad: f32,
     material: usize,
+    csg_index: usize,
 }
 
 impl Sphere {
@@ -16,6 +18,7 @@ impl Sphere {
             center,
             rad,
             material,
+            csg_index: 0,
         }
     }
 }
@@ -29,11 +32,21 @@ impl Object for Sphere {
         self.material
     }
 
-    fn primitives(&self) -> Vec<Box<dyn Primitive + Sync + Send>> {
+    fn set_csg_index(&mut self, csg_index: usize) {
+        self.csg_index = csg_index
+    }
+
+    fn primitives(&self, obj_index: usize) -> Vec<Box<dyn Primitive + Sync + Send>> {
         vec![Box::new(SpherePrimitive::new(
             self.center,
             self.rad,
             self.material,
+            obj_index,
+            self.csg_index,
         ))]
+    }
+
+    fn filter_hits(&self, hits: Vec<Hit>, _: usize) -> Vec<Hit> {
+        hits
     }
 }

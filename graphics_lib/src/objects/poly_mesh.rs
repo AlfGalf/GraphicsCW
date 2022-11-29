@@ -1,3 +1,4 @@
+use crate::hit::Hit;
 use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::triangle::TrianglePrimitive;
@@ -65,6 +66,7 @@ pub struct PolyMesh {
     vertices: Vec<Vertex>,
     smoothing: bool,
     material: usize,
+    csg_index: usize,
 }
 
 impl PolyMesh {
@@ -212,6 +214,7 @@ impl PolyMesh {
             smoothing: smooth,
             vertices,
             material,
+            csg_index: 0,
         };
 
         for v in pm.vertices.iter_mut() {
@@ -239,7 +242,11 @@ impl Object for PolyMesh {
         self.material
     }
 
-    fn primitives(&self) -> Vec<Box<dyn Primitive + Sync + Send>> {
+    fn set_csg_index(&mut self, csg_index: usize) {
+        self.csg_index = csg_index;
+    }
+
+    fn primitives(&self, obj_index: usize) -> Vec<Box<dyn Primitive + Sync + Send>> {
         self.triangles
             .iter()
             .map::<Box<dyn Primitive + Sync + Send>, _>(|t| {
@@ -257,8 +264,14 @@ impl Object for PolyMesh {
                     vc.normal.unwrap(),
                     self.smoothing,
                     self.material,
+                    obj_index,
+                    self.csg_index,
                 ))
             })
             .collect()
+    }
+
+    fn filter_hits(&self, hits: Vec<Hit>, _: usize) -> Vec<Hit> {
+        hits
     }
 }
