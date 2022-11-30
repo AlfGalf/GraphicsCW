@@ -35,7 +35,7 @@ impl Object for Plane {
     }
 
     fn set_csg_index(&mut self, csg_index: usize) {
-        self.csg_index = 0
+        self.csg_index = csg_index
     }
 
     fn primitives(&self, obj_index: usize) -> Vec<Box<dyn Primitive + Sync + Send>> {
