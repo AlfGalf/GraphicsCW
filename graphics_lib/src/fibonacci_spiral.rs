@@ -1,6 +1,4 @@
 use glam::Vec3;
-use rand;
-use rand::rngs::ThreadRng;
 use rand::Rng;
 use std::f32::consts::PI;
 

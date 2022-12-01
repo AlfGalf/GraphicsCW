@@ -1,4 +1,3 @@
-use crate::primitives::primitive::Primitive;
 use glam::Vec3;
 
 #[derive(Clone)]

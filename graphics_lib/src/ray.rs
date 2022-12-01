@@ -19,10 +19,10 @@ impl Ray {
     }
 
     pub fn position(&self) -> Vec3 {
-        self.position.clone()
+        self.position
     }
 
     pub fn direction(&self) -> Vec3 {
-        self.direction.clone()
+        self.direction
     }
 }

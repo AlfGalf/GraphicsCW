@@ -10,24 +10,16 @@ use glam::Vec3;
 pub struct PlanePrimitive {
     normal: Vec3,
     d: f32,
-    material_index: usize,
     node_index: usize,
     obj_index: usize,
     csg_index: usize,
 }
 
 impl PlanePrimitive {
-    pub fn new(
-        point: Vec3,
-        normal: Vec3,
-        material_index: usize,
-        obj_index: usize,
-        csg_index: usize,
-    ) -> Self {
+    pub fn new(point: Vec3, normal: Vec3, obj_index: usize, csg_index: usize) -> Self {
         Self {
             normal,
             d: normal.dot(point),
-            material_index,
             node_index: 0,
             obj_index,
             csg_index,

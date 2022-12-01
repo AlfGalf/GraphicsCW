@@ -5,7 +5,7 @@ use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use glam::{Mat4, Vec3};
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct QuadraticPrimitive {
@@ -104,7 +104,7 @@ impl Primitive for QuadraticPrimitive {
             + 2. * values[8] * ray.position().z
             + values[9];
 
-        let discriminant = (b.powi(2) - 4. * a * c);
+        let discriminant = b.powi(2) - 4. * a * c;
 
         if discriminant < EPSILON || a.abs() < EPSILON {
             vec![]
@@ -115,7 +115,7 @@ impl Primitive for QuadraticPrimitive {
             let t0 = v0.min(v1);
             let t1 = v0.max(v1);
             let p0 = ray.position() + t0 * ray.direction();
-            // let p0 = ray.position() + t1 * ray.direction();
+            let p1 = ray.position() + t1 * ray.direction();
             vec![
                 Hit::new(
                     p0,
@@ -129,18 +129,18 @@ impl Primitive for QuadraticPrimitive {
                     self.object_index,
                     self.csg_index,
                 ),
-                // Hit::new(
-                //     p1,
-                //     -Vec3::new(
-                //         values[0] * p1.x + values[1] * p1.y + values[2] * p1.z + values[3],
-                //         values[1] * p1.x + values[4] * p1.y + values[5] * p1.z + values[6],
-                //         values[2] * p1.x + values[5] * p1.y + values[7] * p1.z + values[8],
-                //     ),
-                //     ray.position().distance(p1),
-                //     false,
-                //     self.object_index,
-                //     self.csg_index,
-                // ),
+                Hit::new(
+                    p1,
+                    -Vec3::new(
+                        values[0] * p1.x + values[1] * p1.y + values[2] * p1.z + values[3],
+                        values[1] * p1.x + values[4] * p1.y + values[5] * p1.z + values[6],
+                        values[2] * p1.x + values[5] * p1.y + values[7] * p1.z + values[8],
+                    ),
+                    ray.position().distance(p1),
+                    false,
+                    self.object_index,
+                    self.csg_index,
+                ),
             ]
         }
     }

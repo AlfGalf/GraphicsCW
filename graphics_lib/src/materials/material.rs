@@ -20,12 +20,12 @@ pub trait Material: Debug {
 
     fn get_mat_index(&self) -> usize;
 
-    // fn compute_photon(
-    //     &self,
-    //     view_ray: Ray,
-    //     hit: &Hit,
-    //     scene: &Scene,
-    //     recurse_depth: usize,
-    //     recurse_power: Color,
-    // ) -> Vec<Photon>;
+    fn compute_photon(
+        &self,
+        view_ray: Ray,
+        hit: &Hit,
+        scene: &Scene,
+        recurse_depth: usize,
+        recurse_power: Color,
+    ) -> Vec<Photon>;
 }

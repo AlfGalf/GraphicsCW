@@ -1,6 +1,7 @@
 use glam::Vec3;
 use kd_tree::KdPoint;
 
+#[derive(Debug)]
 enum PhotonType {
     Shadow,
     Direct,
@@ -8,6 +9,7 @@ enum PhotonType {
     // Caustic,
 }
 
+#[derive(Debug)]
 pub struct Photon {
     pos: [f32; 3],
     p_type: PhotonType,

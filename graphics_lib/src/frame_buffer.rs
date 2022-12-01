@@ -47,8 +47,8 @@ pub struct FrameBuffer {
 impl FrameBuffer {
     pub fn new(width: usize, height: usize) -> Self {
         FrameBuffer {
-            width: width,
-            height: height,
+            width,
+            height,
             frame_buffer: vec![Pixel::new(); width * height],
         }
     }

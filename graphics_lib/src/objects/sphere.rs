@@ -40,7 +40,6 @@ impl Object for Sphere {
         vec![Box::new(SpherePrimitive::new(
             self.center,
             self.rad,
-            self.material,
             obj_index,
             self.csg_index,
         ))]

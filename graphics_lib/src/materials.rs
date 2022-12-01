@@ -6,4 +6,4 @@ pub mod material;
 mod reflective_material;
 pub mod simple_color_material;
 mod specular_material;
-mod trasparent_material;
+mod transparent_material;

@@ -2,6 +2,7 @@ use crate::color::Color;
 use crate::constants::{EPSILON, MAX_RECURSE_DEPTH, MIN_RECURSE_COEFFICIENT};
 use crate::hit::Hit;
 use crate::materials::material::Material;
+use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use glam::Vec3;
@@ -111,15 +112,15 @@ impl<'a> TransparentMaterial {
         // let k_r = k_r.min(1.).max(0.);
         // let k_t = 1. - k_r;
 
-        let R_floor = ((refr_index * cos_t_i - sqrt) / (refr_index * cos_t_i + sqrt)).powi(2);
-        let R_bb = ((cos_t_i - refr_index * sqrt) / (cos_t_i + refr_index * sqrt)).powi(2);
+        let r_floor = ((refr_index * cos_t_i - sqrt) / (refr_index * cos_t_i + sqrt)).powi(2);
+        let r_bb = ((cos_t_i - refr_index * sqrt) / (cos_t_i + refr_index * sqrt)).powi(2);
 
-        let R_t_i = ((R_floor + R_bb) / 2.).max(0.).min(1.);
-        let T_t_i = 1. - R_t_i;
+        let r_t_i = ((r_floor + r_bb) / 2.).max(0.).min(1.);
+        let t_t_i = 1. - r_t_i;
 
         let refracted_ray = Ray::new(pos + refracted_dir * EPSILON, refracted_dir);
 
-        (Some(refracted_ray), T_t_i, reflection_ray, R_t_i)
+        (Some(refracted_ray), t_t_i, reflection_ray, r_t_i)
     }
 }
 
@@ -172,5 +173,17 @@ impl Material for TransparentMaterial {
 
     fn get_mat_index(&self) -> usize {
         self.mat_index
+    }
+
+    fn compute_photon(
+        &self,
+        view_ray: Ray,
+        hit: &Hit,
+        scene: &Scene,
+        recurse_depth: usize,
+        recurse_power: Color,
+    ) -> Vec<Photon> {
+        // TODO: FIX
+        vec![]
     }
 }

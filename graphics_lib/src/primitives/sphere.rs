@@ -9,24 +9,16 @@ use glam::Vec3;
 pub struct SpherePrimitive {
     center: Vec3,
     rad: f32,
-    material: usize,
     node_index: usize,
     obj_index: usize,
     csg_index: usize,
 }
 
 impl SpherePrimitive {
-    pub(crate) fn new(
-        center: Vec3,
-        rad: f32,
-        material: usize,
-        obj_index: usize,
-        csg_index: usize,
-    ) -> Self {
+    pub(crate) fn new(center: Vec3, rad: f32, obj_index: usize, csg_index: usize) -> Self {
         Self {
             center,
             rad,
-            material,
             node_index: 0,
             obj_index,
             csg_index,

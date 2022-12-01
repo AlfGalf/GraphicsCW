@@ -2,6 +2,7 @@ use crate::color::Color;
 use crate::constants::{EPSILON, MAX_RECURSE_DEPTH, MIN_RECURSE_COEFFICIENT};
 use crate::hit::Hit;
 use crate::materials::material::Material;
+use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use glam::Vec3;
@@ -47,5 +48,17 @@ impl Material for ReflectiveMaterial {
 
     fn get_mat_index(&self) -> usize {
         self.mat_index
+    }
+
+    fn compute_photon(
+        &self,
+        view_ray: Ray,
+        hit: &Hit,
+        scene: &Scene,
+        recurse_depth: usize,
+        recurse_power: Color,
+    ) -> Vec<Photon> {
+        // TODO: Fix
+        vec![]
     }
 }

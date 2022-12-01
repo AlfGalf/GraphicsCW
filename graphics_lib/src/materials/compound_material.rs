@@ -6,7 +6,8 @@ use crate::materials::diffuse_material::DiffuseMaterial;
 use crate::materials::material::Material;
 use crate::materials::reflective_material::ReflectiveMaterial;
 use crate::materials::specular_material::SpecularMaterial;
-use crate::materials::trasparent_material::TransparentMaterial;
+use crate::materials::transparent_material::TransparentMaterial;
+use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use std::fmt::Debug;
@@ -135,5 +136,17 @@ impl Material for CompoundMaterial {
 
     fn get_mat_index(&self) -> usize {
         self.mat_index
+    }
+
+    fn compute_photon(
+        &self,
+        view_ray: Ray,
+        hit: &Hit,
+        scene: &Scene,
+        recurse_depth: usize,
+        recurse_power: Color,
+    ) -> Vec<Photon> {
+        // TODO: FIX
+        vec![]
     }
 }

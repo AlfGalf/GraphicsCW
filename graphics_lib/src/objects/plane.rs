@@ -42,7 +42,6 @@ impl Object for Plane {
         vec![Box::new(PlanePrimitive::new(
             self.point,
             self.normal,
-            self.material,
             obj_index,
             self.csg_index,
         ))]

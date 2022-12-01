@@ -24,13 +24,9 @@ impl Light for PointLight {
         let distance = point.distance(self.position);
         let ray = Ray::new(self.position, (point - self.position).normalize());
 
-        if scene
+        if !scene
             .intersection(ray)
-            .filter(|r| {
-                r.get_dir() && r.get_distance() > 0. && r.get_distance() < distance - EPSILON
-            })
-            .next()
-            .is_none()
+            .any(|r| r.get_dir() && r.get_distance() > 0. && r.get_distance() < distance - EPSILON)
         {
             self.color * (1. / ((1. + distance / 10.) * (1. + distance / 10.)))
         } else {

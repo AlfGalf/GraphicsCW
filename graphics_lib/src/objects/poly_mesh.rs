@@ -26,7 +26,7 @@ impl Vertex {
         self.p = tr.transform_point3(self.p)
     }
 
-    pub fn compute_normal(&mut self, tr: &Vec<Triangle>) {
+    pub fn compute_normal(&mut self, tr: &[Triangle]) {
         self.normal = Some({
             let normal_sum = self
                 .triangles
@@ -38,7 +38,7 @@ impl Vertex {
 }
 
 impl Triangle {
-    fn new(vs: &Vec<Vertex>, an: usize, bn: usize, cn: usize) -> Self {
+    fn new(vs: &[Vertex], an: usize, bn: usize, cn: usize) -> Self {
         let av = vs.get(an).unwrap().p;
         let bv = vs.get(bn).unwrap().p;
         let cv = vs.get(cn).unwrap().p;
@@ -51,7 +51,7 @@ impl Triangle {
         }
     }
 
-    fn update_normal(&mut self, vs: &Vec<Vertex>) {
+    fn update_normal(&mut self, vs: &[Vertex]) {
         let av = vs.get(self.an).unwrap().p;
         let bv = vs.get(self.bn).unwrap().p;
         let cv = vs.get(self.cn).unwrap().p;
@@ -100,7 +100,7 @@ impl PolyMesh {
             }
 
             let vertex_str = vertices_line
-                .split(" ")
+                .split(' ')
                 .nth(2)
                 .ok_or("Vertex line malformed (no number).")?;
 
@@ -120,7 +120,7 @@ impl PolyMesh {
             }
 
             let faces_str = faces_line
-                .split(" ")
+                .split(' ')
                 .nth(2)
                 .ok_or("Faces line malformed (no number).")?;
 
@@ -137,7 +137,7 @@ impl PolyMesh {
                 .ok_or("Vertex line missing")?
                 .map_err(|_| "Cannot read vertex line.")?;
 
-            let mut split_line = line.split(" ");
+            let mut split_line = line.split(' ');
             vertices.push(Vertex {
                 p: Vec3::new(
                     split_line
@@ -170,7 +170,7 @@ impl PolyMesh {
                     .ok_or("Face line missing")?
                     .map_err(|_| "Cannot read face line.")?;
 
-                let mut split_line = line.split(" ");
+                let mut split_line = line.split(' ');
 
                 if split_line
                     .next()

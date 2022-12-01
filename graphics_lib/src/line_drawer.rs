@@ -66,22 +66,18 @@ pub fn draw_line(fb: &mut FrameBuffer, sx: usize, sy: usize, ex: usize, ey: usiz
 
     let dx = if ex == sx {
         0
+    } else if ex > sx {
+        ex - sx - 1
     } else {
-        if ex > sx {
-            ex - sx - 1
-        } else {
-            sx - ex - 1
-        }
+        sx - ex - 1
     };
 
     let dy = if ey == sy {
         0
+    } else if ey > sy {
+        ey - sy - 1
     } else {
-        if ey > sy {
-            ey - sy - 1
-        } else {
-            sy - ey - 1
-        }
+        sy - ey - 1
     };
 
     if (dx == 0) && (dy == 0) {

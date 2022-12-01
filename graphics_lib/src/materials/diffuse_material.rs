@@ -1,6 +1,7 @@
 use crate::color::Color;
 use crate::hit::Hit;
 use crate::materials::material::Material;
+use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
 
@@ -37,5 +38,17 @@ impl Material for DiffuseMaterial {
 
     fn get_mat_index(&self) -> usize {
         self.mat_index
+    }
+
+    fn compute_photon(
+        &self,
+        view_ray: Ray,
+        hit: &Hit,
+        scene: &Scene,
+        recurse_depth: usize,
+        recurse_power: Color,
+    ) -> Vec<Photon> {
+        // TODO: FIX
+        vec![]
     }
 }

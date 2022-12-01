@@ -3,7 +3,6 @@ use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use glam::Affine3A;
 use std::fmt::Debug;
-use std::net::Shutdown::Read;
 
 #[derive(Debug)]
 pub enum CSGType {
@@ -15,16 +14,16 @@ pub enum CSGType {
 #[derive(Debug)]
 pub struct CSG {
     csg_type: CSGType,
-    left: Box<dyn Object + Sync>,
-    right: Box<dyn Object + Sync>,
+    left: Box<dyn Object + Sync + Send>,
+    right: Box<dyn Object + Sync + Send>,
     csg_index: usize,
 }
 
 impl CSG {
     pub fn new(
         csg_type: CSGType,
-        left: Box<dyn Object + Sync>,
-        right: Box<dyn Object + Sync>,
+        left: Box<dyn Object + Sync + Send>,
+        right: Box<dyn Object + Sync + Send>,
     ) -> Self {
         Self {
             csg_type,
@@ -70,6 +69,8 @@ impl Object for CSG {
         a
     }
 
+    //noinspection RsExternalLinter
+    //noinspection ALL
     // TODO: Sort out the materials
     fn filter_hits<'a>(&self, hits: Vec<Hit>, index: usize) -> Vec<Hit> {
         let hits = self.left.filter_hits(hits, index);
@@ -77,20 +78,18 @@ impl Object for CSG {
 
         let mut inside_left = {
             hits.iter()
-                .filter(|h| {
+                .find(|h| {
                     h.get_object_index() == index
                         && is_node_left(self.csg_index, h.get_csg_index()) == Some(true)
                 })
-                .next()
                 .map_or(false, |h| !h.get_dir())
         };
         let mut inside_right = {
             hits.iter()
-                .filter(|h| {
+                .find(|h| {
                     h.get_object_index() == index
                         && is_node_left(self.csg_index, h.get_csg_index()) == Some(false)
                 })
-                .next()
                 .map_or(false, |h| !h.get_dir())
         };
 
@@ -100,82 +99,80 @@ impl Object for CSG {
         let output = hits
             .into_iter()
             .filter_map(|mut h| {
-                if !(h.get_object_index() == index) {
+                if h.get_object_index() != index {
                     Some(h)
-                } else {
-                    if let Some(side) = is_node_left(self.csg_index, h.get_csg_index()) {
-                        prev_inside_left = inside_left;
-                        prev_inside_right = inside_right;
-                        if side {
-                            // Left case
-                            inside_left = h.get_dir();
-                        } else {
-                            // Right case
-                            inside_right = h.get_dir();
-                        };
+                } else if let Some(side) = is_node_left(self.csg_index, h.get_csg_index()) {
+                    prev_inside_left = inside_left;
+                    prev_inside_right = inside_right;
+                    if side {
+                        // Left case
+                        inside_left = h.get_dir();
+                    } else {
+                        // Right case
+                        inside_right = h.get_dir();
+                    };
 
-                        match self.csg_type {
-                            CSGType::Union => {
-                                if h.get_dir() && (inside_left || inside_right) {
-                                    Some(h)
-                                } else if !h.get_dir() && !inside_left && !inside_right {
-                                    Some(h)
-                                } else {
-                                    None
-                                }
-                            }
-                            CSGType::Intersection => {
-                                if h.get_dir() && inside_left && inside_right {
-                                    Some(h)
-                                } else if !h.get_dir() && (!inside_left || !inside_right) {
-                                    Some(h)
-                                } else {
-                                    None
-                                }
-                            }
-                            CSGType::Subtract => {
-                                if inside_left
-                                    && !prev_inside_left
-                                    && !inside_right
-                                    && !prev_inside_right
-                                {
-                                    // Case, just entered left, not in right
-                                    Some(h)
-                                    // None
-                                } else if !inside_left
-                                    && prev_inside_left
-                                    && !inside_right
-                                    && !prev_inside_right
-                                {
-                                    // Case, just exited left, not in right
-                                    Some(h)
-                                    // None
-                                } else if inside_left
-                                    && prev_inside_left
-                                    && inside_right
-                                    && !prev_inside_right
-                                {
-                                    // Case, just entered right, inside left
-                                    h.flip();
-                                    Some(h)
-                                    // None
-                                } else if inside_left
-                                    && prev_inside_left
-                                    && !inside_right
-                                    && prev_inside_right
-                                {
-                                    // Case, just exited right, inside left
-                                    h.flip();
-                                    Some(h)
-                                    // None
-                                } else {
-                                    None
-                                }
+                    match self.csg_type {
+                        CSGType::Union => {
+                            if (h.get_dir() && (inside_left || inside_right))
+                                || (!h.get_dir() && !inside_left && !inside_right)
+                            {
+                                Some(h)
+                            } else {
+                                None
                             }
                         }
-                    } else {
-                        Some(h)
+                        CSGType::Intersection => {
+                            if (h.get_dir() && inside_left && inside_right)
+                                || (!h.get_dir() && (!inside_left || !inside_right))
+                            {
+                                Some(h)
+                            } else {
+                                None
+                            }
+                        }
+                        CSGType::Subtract => {
+                            if inside_left
+                                && !prev_inside_left
+                                && !inside_right
+                                && !prev_inside_right
+                            {
+                                // Case, just entered left, not in right
+                                Some(h)
+                                // None
+                            } else if !inside_left
+                                && prev_inside_left
+                                && !inside_right
+                                && !prev_inside_right
+                            {
+                                // Case, just exited left, not in right
+                                Some(h)
+                                // None
+                            } else if inside_left
+                                && prev_inside_left
+                                && inside_right
+                                && !prev_inside_right
+                            {
+                                // Case, just entered right, inside left
+                                h.flip();
+                                Some(h)
+                                // None
+                            } else if inside_left
+                                && prev_inside_left
+                                && !inside_right
+                                && prev_inside_right
+                            {
+                                // Case, just exited right, inside left
+                                h.flip();
+                                Some(h)
+                                // None
+                            } else {
+                                None
+                            }
+                        }
                     }
+                } else {
+                    Some(h)
                 }
             })
             .collect();

@@ -26,7 +26,7 @@ impl Camera {
         let up = self.direction.cross(right);
 
         Ray::new(
-            self.position.clone(),
+            self.position,
             (self.direction * self.focal_length)
                 + (up * (y as f32 / 2.))
                 + (right * (x as f32 / 2.)),

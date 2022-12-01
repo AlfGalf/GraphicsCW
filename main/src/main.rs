@@ -20,7 +20,7 @@ use std::fs::File;
 use std::io::{BufReader, Write};
 
 fn main() {
-    let materials: Vec<Box<dyn Material + Sync>> = vec![
+    let materials: Vec<Box<dyn Material + Sync + Send>> = vec![
         Box::new(CompoundMaterial::new_transparent_material_opacity(
             // 0 -> transparent grey
             1.04,
@@ -220,7 +220,7 @@ fn main() {
             * Affine3A::from_rotation_x(0.1)),
     );
 
-    let mut quadratic = Quadratic::new(
+    let quadratic = Quadratic::new(
         [
             0.8, 0.2, 0., 0., // 1
             0.8, 0., 0., // 2
