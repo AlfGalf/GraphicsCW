@@ -1,4 +1,5 @@
 use crate::color::Color;
+use crate::fibonacci_spiral::fibonacci_spiral_random;
 use crate::lights::light::Light;
 use crate::ray::Ray;
 use crate::scene::Scene;
@@ -39,5 +40,9 @@ impl Light for PointLight {
 
     fn get_direction(&self, point: Vec3) -> Vec3 {
         (point - self.position).normalize()
+    }
+
+    fn generate_photon_dir(&self) -> Ray {
+        Ray::new(self.position, fibonacci_spiral_random())
     }
 }

@@ -12,6 +12,7 @@ use graphics_lib::objects::cube::Cube;
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
 use graphics_lib::objects::poly_mesh::PolyMesh;
+use graphics_lib::objects::quadratic::Quadratic;
 use graphics_lib::objects::sphere::Sphere;
 use graphics_lib::scene::Scene;
 use std::fs;
@@ -219,6 +220,16 @@ fn main() {
             * Affine3A::from_rotation_x(0.1)),
     );
 
+    let mut quadratic = Quadratic::new(
+        [
+            0.8, 0.2, 0., 0., // 1
+            0.8, 0., 0., // 2
+            1.0, 0.,   // 3
+            -2.5, // 4
+        ],
+        4,
+    );
+
     let light = PointLight::new(Vec3::new(-2.0, 4.0, -7.0), Color::new(0.9, 0.8, 0.85));
     let light2 = PointLight::new(Vec3::new(4.0, 4.0, -15.0), Color::new(0.8, 0.9, 0.85));
     let dir_light = DirectionalLight::new(Vec3::new(2.0, -4.0, 2.0), Color::new(0.9, 0.8, 0.85));
@@ -239,20 +250,21 @@ fn main() {
             Box::new(plane_bottom),
             Box::new(plane_front),
             // Box::new(castle),
-            // Box::new(castle_hole),
-            // Box::new(cube),
+            Box::new(castle_hole),
+            Box::new(cube),
+            Box::new(quadratic),
         ],
         vec![
             Box::new(light),
-            Box::new(light2),
-            // Box::new(dir_light)
+            // Box::new(light2),
+            // Box::new(dir_light),
         ],
         materials,
         Camera::new(
             Vec3::new(0., 0., -20.),
             Vec3::new(0.05, 0.0, 1.0),
             Vec3::new(0., 1., 0.),
-            2.2,
+            1.,
         ),
     );
 

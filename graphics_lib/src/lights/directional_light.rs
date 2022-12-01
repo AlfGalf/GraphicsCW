@@ -40,4 +40,8 @@ impl Light for DirectionalLight {
     fn get_direction(&self, _: Vec3) -> Vec3 {
         self.direction
     }
+
+    fn generate_photon_dir(&self) -> Ray {
+        todo!()
+    }
 }

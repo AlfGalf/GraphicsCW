@@ -1,12 +1,10 @@
+use crate::constants::{EPSILON, SCENE_BOUNDS};
 use crate::hit::Hit;
 use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use glam::Vec3;
-
-const SCENE_BOUNDS: f32 = 1.0E10;
-const EPSILON: f32 = 0.00001;
 
 #[derive(Debug, Clone)]
 pub struct PlanePrimitive {

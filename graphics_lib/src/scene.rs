@@ -13,6 +13,7 @@ use bvh::bvh::BVH;
 use rayon::prelude::*;
 use std::fmt::Debug;
 
+// Scene object
 #[derive(Debug)]
 pub struct Scene {
     lights: Vec<Box<dyn Light + Sync>>,
@@ -30,11 +31,13 @@ impl Scene {
         materials: Vec<Box<dyn Material + Sync>>,
         camera: Camera,
     ) -> Scene {
+        // Store objects and populate each objects CSG tree indices
         let mut objects = objects;
         for o in objects.iter_mut() {
             o.set_csg_index(1);
         }
 
+        // Get the primitive from each object (with the objects index)
         let mut primitives: Vec<PrimitiveWrapper> = objects
             .iter()
             .enumerate()
@@ -43,8 +46,10 @@ impl Scene {
             .map(|p| PrimitiveWrapper { primitive: p })
             .collect();
 
+        // Build the bounding view hierarchy for the scene
         let bvh = BVH::build(&mut primitives);
 
+        // Tell each material its index (necessary for refraction logic)
         let materials = materials
             .into_iter()
             .enumerate()
@@ -53,6 +58,10 @@ impl Scene {
                 m
             })
             .collect();
+
+        // Build photon maps
+        // TODO: Normal photon map
+        // TODO: Caustics
 
         Scene {
             lights,
@@ -70,6 +79,7 @@ impl Scene {
 }
 
 impl<'a> Scene {
+    // Calculates the color for a ray in the scene
     pub fn calc_ray(
         &self,
         ray: Ray,
@@ -98,6 +108,7 @@ impl<'a> Scene {
         }
     }
 
+    // Renders an image in the scene
     pub fn render(&self, width: usize, height: usize) -> FrameBuffer {
         let mut fb = FrameBuffer::new(width, height);
 
@@ -129,6 +140,7 @@ impl<'a> Scene {
         fb
     }
 
+    // Finds all the hits for a ray in the scene
     pub fn intersection(&'a self, ray: Ray) -> impl Iterator<Item = Hit> + 'a {
         let mut hits = self
             .bvh
@@ -150,6 +162,7 @@ impl<'a> Scene {
     }
 }
 
+// Wrapper necessary for polymorphic traits
 #[derive(Debug)]
 struct PrimitiveWrapper {
     primitive: Box<dyn Primitive + Sync + Send>,
