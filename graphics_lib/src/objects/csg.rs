@@ -1,7 +1,8 @@
 use crate::hit::Hit;
 use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
-use glam::Affine3A;
+use crate::scene::Scene;
+use glam::{Affine3A, Vec3};
 use std::fmt::Debug;
 
 #[derive(Debug)]
@@ -40,6 +41,8 @@ impl Object for CSG {
         self.right.apply_transform(t);
     }
 
+    // Works out which child object the hit belonged to.
+    //      Uses the CSG index to index into the tree
     fn get_material(&self, hit: &Hit) -> usize {
         match self.csg_type {
             CSGType::Subtract => self.left.get_material(hit),
@@ -69,9 +72,7 @@ impl Object for CSG {
         a
     }
 
-    //noinspection RsExternalLinter
-    //noinspection ALL
-    // TODO: Sort out the materials
+    // Filters and modifies the hits to remove the CSG hits that dont exist
     fn filter_hits<'a>(&self, hits: Vec<Hit>, index: usize) -> Vec<Hit> {
         let hits = self.left.filter_hits(hits, index);
         let hits = self.right.filter_hits(hits, index);
@@ -178,8 +179,36 @@ impl Object for CSG {
             .collect();
         output
     }
+
+    // Computes a bounding box for a CSG
+    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+        let left_bound = self.left.get_caustic_bounds();
+        let right_bound = self.right.get_caustic_bounds();
+        match self.csg_type {
+            CSGType::Union => (
+                left_bound.0.min(right_bound.0),
+                left_bound.1.max(right_bound.1),
+            ),
+            CSGType::Intersection => (
+                left_bound.0.max(right_bound.0),
+                left_bound.1.min(right_bound.1),
+            ),
+            CSGType::Subtract => left_bound,
+        }
+    }
+
+    // If either child needs a caustic, the CSG needs a caustic
+    fn needs_caustic(&self, scene: &Scene) -> bool {
+        match self.csg_type {
+            CSGType::Subtract => self.left.needs_caustic(scene),
+            _ => self.left.needs_caustic(scene) || self.right.needs_caustic(scene),
+        }
+    }
 }
 
+// Helper function for the CSG index tree
+// If the child is on the left, returns Some(true), if on the right returns Some(false)
+// Otherwise returns None
 fn is_node_left(parent: usize, child: usize) -> Option<bool> {
     let mut current = child;
     while current > parent {
@@ -189,7 +218,7 @@ fn is_node_left(parent: usize, child: usize) -> Option<bool> {
         if parent * 2 + 1 == current {
             return Some(false);
         }
-        current = current / 2;
+        current /= 2;
     }
     None
 }

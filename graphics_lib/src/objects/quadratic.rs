@@ -2,7 +2,8 @@ use crate::hit::Hit;
 use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::quadratic::QuadraticPrimitive;
-use glam::{Affine3A, Mat4};
+use crate::scene::Scene;
+use glam::{Affine3A, Mat4, Vec3};
 
 #[derive(Debug)]
 pub struct Quadratic {
@@ -28,11 +29,10 @@ impl Quadratic {
 
 impl Object for Quadratic {
     fn apply_transform(&mut self, t: &Affine3A) {
-        // todo!()
         self.mat = Mat4::from(*t).transpose() * self.mat * Mat4::from(*t)
     }
 
-    fn get_material(&self, hit: &Hit) -> usize {
+    fn get_material(&self, _: &Hit) -> usize {
         self.material
     }
 
@@ -48,7 +48,18 @@ impl Object for Quadratic {
         ))]
     }
 
-    fn filter_hits(&self, hits: Vec<Hit>, index: usize) -> Vec<Hit> {
+    fn filter_hits(&self, hits: Vec<Hit>, _: usize) -> Vec<Hit> {
         hits
+    }
+
+    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+        (
+            Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),
+            Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
+        )
+    }
+
+    fn needs_caustic(&self, scene: &Scene) -> bool {
+        scene.material_needs_caustic(self.material)
     }
 }

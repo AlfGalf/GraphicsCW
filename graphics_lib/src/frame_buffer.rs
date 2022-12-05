@@ -73,13 +73,28 @@ impl FrameBuffer {
         &self.frame_buffer[y * self.width + x]
     }
 
-    pub fn to_rgb_file(&self) -> Vec<u8> {
+    pub fn to_rgb_file(&self, cap: f32) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::new();
 
-        let max_val = self.frame_buffer.iter().fold(f32::MIN, |prev: f32, pixel| {
+        let out_pixels: Vec<Pixel> = self
+            .frame_buffer
+            .iter()
+            .map(|p| {
+                Pixel::from_color(
+                    Color::new(
+                        p.red.min(cap).sqrt(),
+                        p.green.min(cap).sqrt(),
+                        p.blue.min(cap).sqrt(),
+                    ),
+                    p.depth,
+                )
+            })
+            .collect();
+
+        let max_val = out_pixels.iter().fold(f32::MIN, |prev: f32, pixel| {
             prev.max(pixel.red).max(pixel.green).max(pixel.blue)
         });
-        let min_val = self.frame_buffer.iter().fold(f32::MAX, |prev: f32, pixel| {
+        let min_val = out_pixels.iter().fold(f32::MAX, |prev: f32, pixel| {
             prev.min(pixel.red).min(pixel.green).min(pixel.blue)
         });
 
@@ -96,7 +111,7 @@ impl FrameBuffer {
                 .to_vec(),
         );
 
-        self.frame_buffer.iter().for_each(|pixel| {
+        out_pixels.iter().for_each(|pixel| {
             output.push(u8::try_from((((pixel.red - min_val) / diff) * 255.) as usize).unwrap());
             output.push(u8::try_from((((pixel.green - min_val) / diff) * 255.) as usize).unwrap());
             output.push(u8::try_from((((pixel.blue - min_val) / diff) * 255.) as usize).unwrap());

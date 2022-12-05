@@ -2,6 +2,7 @@ use crate::hit::Hit;
 use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::triangle::TrianglePrimitive;
+use crate::scene::Scene;
 use glam::{Affine3A, Vec3};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -263,7 +264,6 @@ impl Object for PolyMesh {
                     vb.normal.unwrap(),
                     vc.normal.unwrap(),
                     self.smoothing,
-                    self.material,
                     obj_index,
                     self.csg_index,
                 ))
@@ -271,7 +271,32 @@ impl Object for PolyMesh {
             .collect()
     }
 
+    fn needs_caustic(&self, scene: &Scene) -> bool {
+        scene.material_needs_caustic(self.material)
+    }
+
     fn filter_hits(&self, hits: Vec<Hit>, _: usize) -> Vec<Hit> {
         hits
+    }
+
+    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+        self.triangles.iter().fold(
+            (
+                Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
+                Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),
+            ),
+            |(c_min, c_max), t| {
+                (
+                    c_min
+                        .min(self.vertices[t.an].p)
+                        .min(self.vertices[t.bn].p)
+                        .min(self.vertices[t.cn].p),
+                    c_max
+                        .max(self.vertices[t.an].p)
+                        .max(self.vertices[t.bn].p)
+                        .max(self.vertices[t.cn].p),
+                )
+            },
+        )
     }
 }

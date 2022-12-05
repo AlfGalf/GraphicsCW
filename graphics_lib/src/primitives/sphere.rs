@@ -70,9 +70,6 @@ impl Primitive for SpherePrimitive {
             let t_second = t0.max(t1);
             let pos2 = ray.position() + ray.direction() * t_second;
 
-            // TODO: Make this only intersect if going through normal side
-            // TODO: May need to rejig this for rarefaction, light coming in other side
-
             vec![
                 Hit::new(
                     pos1,

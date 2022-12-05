@@ -2,6 +2,7 @@ use crate::hit::Hit;
 use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::triangle::TrianglePrimitive;
+use crate::scene::Scene;
 use glam::{Affine3A, Vec3};
 
 #[derive(Debug)]
@@ -19,22 +20,8 @@ impl Cube {
             csg_index: 0,
         }
     }
-}
 
-impl Object for Cube {
-    fn apply_transform(&mut self, t: &Affine3A) {
-        self.transform = self.transform * *t
-    }
-
-    fn get_material(&self, hit: &Hit) -> usize {
-        self.material
-    }
-
-    fn set_csg_index(&mut self, csg_index: usize) {
-        self.csg_index = csg_index;
-    }
-
-    fn primitives(&self, obj_index: usize) -> Vec<Box<dyn Primitive + Sync + Send>> {
+    fn get_triangles(&self) -> Vec<(Vec3, Vec3, Vec3)> {
         let triangles: Vec<(Vec3, Vec3, Vec3)> = vec![
             (
                 Vec3::new(-0.5, -0.5, -0.5),
@@ -98,12 +85,37 @@ impl Object for Cube {
             ), // +z side
         ];
 
-        let triangles: Vec<Box<dyn Primitive + Sync + Send>> = triangles
+        triangles
+            .into_iter()
+            .map(|(p1, p2, p3)| {
+                (
+                    self.transform.transform_point3(p1),
+                    self.transform.transform_point3(p2),
+                    self.transform.transform_point3(p3),
+                )
+            })
+            .collect()
+    }
+}
+
+impl Object for Cube {
+    fn apply_transform(&mut self, t: &Affine3A) {
+        self.transform = self.transform * *t
+    }
+
+    fn get_material(&self, _: &Hit) -> usize {
+        self.material
+    }
+
+    fn set_csg_index(&mut self, csg_index: usize) {
+        self.csg_index = csg_index;
+    }
+
+    fn primitives(&self, obj_index: usize) -> Vec<Box<dyn Primitive + Sync + Send>> {
+        let triangles: Vec<Box<dyn Primitive + Sync + Send>> = self
+            .get_triangles()
             .into_iter()
             .map::<Box<dyn Primitive + Sync + Send>, _>(|(p1, p2, p3)| {
-                let p1 = self.transform.transform_point3(p1);
-                let p2 = self.transform.transform_point3(p2);
-                let p3 = self.transform.transform_point3(p3);
                 Box::new(TrianglePrimitive::new(
                     p1,
                     p2,
@@ -113,7 +125,6 @@ impl Object for Cube {
                     Vec3::new(0., 0., 0.),
                     Vec3::new(0., 0., 0.),
                     false,
-                    self.material,
                     obj_index,
                     self.csg_index,
                 ))
@@ -122,7 +133,23 @@ impl Object for Cube {
         triangles
     }
 
-    fn filter_hits(&self, hits: Vec<Hit>, index: usize) -> Vec<Hit> {
+    fn filter_hits(&self, hits: Vec<Hit>, _: usize) -> Vec<Hit> {
         hits
+    }
+
+    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+        self.get_triangles().into_iter().fold(
+            (
+                Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
+                Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),
+            ),
+            |(c_min, c_max), (p1, p2, p3)| {
+                (c_min.min(p1).min(p2).min(p3), c_max.max(p1).max(p2).max(p3))
+            },
+        )
+    }
+
+    fn needs_caustic(&self, scene: &Scene) -> bool {
+        scene.material_needs_caustic(self.material)
     }
 }

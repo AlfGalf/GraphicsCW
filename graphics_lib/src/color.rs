@@ -20,6 +20,10 @@ impl Color {
         }
     }
 
+    pub fn magnitude(&self) -> f32 {
+        (self.color.x + self.color.y + self.color.z) / 3.
+    }
+
     pub fn new_black() -> Self {
         Self { color: Vec3::ZERO }
     }
@@ -38,6 +42,10 @@ impl Color {
         Self {
             color: self.color * rhs.color,
         }
+    }
+
+    pub fn scale_const_mag(&self, c: &Color) -> Color {
+        self.scale(c) * (1. / c.magnitude())
     }
 
     pub fn min_val(&self) -> f32 {

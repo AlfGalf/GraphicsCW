@@ -7,6 +7,7 @@ use crate::ray::Ray;
 use crate::scene::Scene;
 use glam::Vec3;
 
+// This material is a perfectly reflective material
 #[derive(Clone, Debug)]
 pub struct ReflectiveMaterial {
     mat_index: usize,
@@ -57,8 +58,34 @@ impl Material for ReflectiveMaterial {
         scene: &Scene,
         recurse_depth: usize,
         recurse_power: Color,
+        light_index: usize,
     ) -> Vec<Photon> {
-        // TODO: Fix
-        vec![]
+        let reflection_dir: Vec3 =
+            view_ray.direction() - 2. * (view_ray.direction().dot(*hit.normal())) * *hit.normal();
+        let reflection_dir = reflection_dir.normalize();
+        scene.calculate_photon_ray(
+            Ray::new(*hit.pos(), reflection_dir),
+            light_index,
+            recurse_depth,
+            recurse_power,
+        )
+    }
+
+    fn needs_caustic(&self) -> bool {
+        false
+    }
+
+    fn compute_caustic_ray(
+        &self,
+        _view_ray: Ray,
+        _hit: &Hit,
+        _scene: &Scene,
+        _recurse_depth: usize,
+        _light_index: usize,
+        _: Color,
+    ) -> Option<Photon> {
+        // Does not retransmit caustics
+        // TODO: Could change this?
+        None
     }
 }

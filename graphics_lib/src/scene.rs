@@ -1,6 +1,9 @@
 use crate::camera::Camera;
 use crate::color::Color;
-use crate::constants::{EPSILON, NUMBER_PHOTONS_PER_LIGHT};
+use crate::constants::{
+    EPSILON, MAX_PHOTON_RECURSE_DEPTH, MIN_RECURSE_COEFFICIENT, NUMBER_CAUSTICS_PER_LIGHT_PER_OBJ,
+    NUMBER_PHOTONS_PER_LIGHT,
+};
 use crate::frame_buffer::{FrameBuffer, Pixel};
 use crate::hit::Hit;
 use crate::lights::light::Light;
@@ -12,6 +15,7 @@ use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use bvh::bvh::BVH;
+use glam::Vec3;
 use kd_tree::KdTree;
 use rayon::prelude::*;
 use std::fmt::Debug;
@@ -24,9 +28,13 @@ pub struct Scene {
     materials: Vec<Box<dyn Material + Sync + Send>>,
     objects: Vec<Box<dyn Object + Sync + Send>>,
     camera: Camera,
+    // The Bounding View Hierarchy data structure is an external crate
+    // https://crates.io/crates/bvh
     bvh: BVH,
-    photon_map: Option<KdTree<Photon>>,
-    caustic_map: Option<KdTree<Photon>>,
+    // KdTree is an external crate used
+    // https://crates.io/crates/kdtree
+    photon_map: KdTree<Photon>,
+    caustic_map: KdTree<Photon>,
 }
 
 impl Scene {
@@ -73,12 +81,21 @@ impl Scene {
             // These will be instantly populated
             // Only not populated as it it useful to have the scene initialised
             //   before populating
-            photon_map: None,
-            caustic_map: None,
+            photon_map: KdTree::default(),
+            caustic_map: KdTree::default(),
         };
 
+        println!("-- Made scene --");
+
         // Build photon maps
-        scene.photon_map = Some(scene.photon_map());
+        scene.photon_map = scene.photon_map();
+
+        println!("-- Built photon map --");
+
+        // Build photon maps
+        scene.caustic_map = scene.caustic_map();
+
+        println!("-- Built caustic map --");
 
         // Return scene
         scene
@@ -141,6 +158,7 @@ impl Scene {
             })
             .flatten()
             .collect();
+        println!("-- Done rendering --");
         // Doesnt populate the FrameBuffer in parallel to avoid memory safety
 
         // From the pixels
@@ -178,52 +196,195 @@ impl Scene {
     }
 
     fn photon_map(&self) -> KdTree<Photon> {
-        // TODO: Normal photon map
-        // TODO: Caustics
         let photons: Vec<Photon> = self
             .lights
-            .iter() // For each light
+            .par_iter() // For each light
             .enumerate()
             .flat_map(|(i, light)| {
                 (0..NUMBER_PHOTONS_PER_LIGHT) // Repeat this many times
                     .into_par_iter() // In parallel
                     .flat_map::<_, Vec<Photon>>(move |_| {
                         let ray = light.generate_photon_dir(); // Generate random ray from light
-                        self.calculate_photon_ray(ray, i) // Get the photons from that ray
+                        self.calculate_photon_ray(ray, i, 0, light.get_color())
+                        // Get the photons from that ray
                     })
                     .collect::<Vec<Photon>>()
             })
             .collect();
+
         KdTree::build_by_ordered_float(photons) // Collate photons into tree
     }
 
-    fn calculate_photon_ray(&self, ray: Ray, light_index: usize) -> Vec<Photon> {
+    // Calculates a list of photons for a ray of light in a scene
+    pub fn calculate_photon_ray(
+        &self,
+        ray: Ray,
+        light_index: usize,
+        recurse_depth: usize,
+        recurse_power: Color,
+    ) -> Vec<Photon> {
         // list of intersections sorted and filtered
         let mut hits = self
             .intersection(ray)
             .into_iter()
             .filter(|h| h.get_distance() > EPSILON);
 
-        let Some(direct_hit) = hits.next() else {
+        let Some(direct_hit) = hits.find(|h| h.get_dir()) else {
             return vec![];
         };
 
+        let mut res = if recurse_depth == 0 {
+            vec![Photon::new_direct(
+                *direct_hit.pos(),
+                light_index,
+                recurse_power,
+                direct_hit.get_object_index(),
+            )]
+        } else {
+            // Photon::new_indirect(*direct_hit.pos(), light_index, recurse_power)
+            vec![]
+        };
+
         // Ask material to compute the photons for the direct and indirect photons
-        let mut res = self.materials
-            [self.objects[direct_hit.get_object_index()].get_material(&direct_hit)]
-        .compute_photon(ray, &direct_hit, self, 0, Color::new_grey(1.));
+        if recurse_depth < MAX_PHOTON_RECURSE_DEPTH
+            && recurse_power.max_val() > MIN_RECURSE_COEFFICIENT
+        {
+            res.append(
+                &mut self.materials
+                    [self.objects[direct_hit.get_object_index()].get_material(&direct_hit)]
+                .compute_photon(
+                    ray,
+                    &direct_hit,
+                    self,
+                    recurse_depth + 1,
+                    recurse_power,
+                    light_index,
+                ),
+            );
+        }
 
         // Add in shadow photons for all subsequent hits
-        res.append(
-            &mut hits
-                .map(|h| Photon::new_shadow(*h.pos(), light_index))
-                .collect::<Vec<Photon>>(),
-        );
+        if recurse_depth == 0 {
+            res.append(
+                &mut hits
+                    .map(|h| Photon::new_shadow(*h.pos(), light_index, h.get_object_index()))
+                    .collect::<Vec<Photon>>(),
+            );
+        }
+
         res
+    }
+
+    // Calculates a single caustic photon for a ray of light in the scene pointed at a specific object
+    pub fn calculate_caustic(
+        &self,
+        ray: &Ray,
+        object_index: usize,
+        light_index: usize,
+        color: Color,
+        recurse_depth: usize,
+    ) -> Option<Photon> {
+        let intersections: Vec<Hit> = self
+            .intersection(*ray)
+            .filter(|p| p.get_distance() > EPSILON && p.get_dir())
+            .collect();
+        let Some(hit) = intersections.first() else {
+            return None;
+            // Ray doesn't hit anything
+        };
+        if hit.get_object_index() != object_index {
+            // Ray does not hit the caustic object first
+            if recurse_depth == 0 {
+                return None;
+            } else {
+                return Some(Photon::new_caustic(
+                    hit.pos(),
+                    light_index,
+                    color,
+                    object_index,
+                ));
+            }
+        }
+
+        self.materials[self.objects[object_index].get_material(hit)].compute_caustic_ray(
+            *ray,
+            hit,
+            self,
+            recurse_depth + 1,
+            light_index,
+            color,
+        )
+    }
+
+    fn caustic_map(&self) -> KdTree<Photon> {
+        // Builds the caustic KdTree
+        let caustics: Vec<Photon> = self
+            .objects
+            .par_iter()
+            .enumerate()
+            // For each object
+            .flat_map(|(obj_index, obj)| {
+                // If the object has a material that needs caustics
+                if obj.needs_caustic(self) {
+                    // find the bounds to generate the caustic within
+                    let caustic_box = obj.get_caustic_bounds();
+                    self.lights
+                        .iter()
+                        .enumerate()
+                        .flat_map(|(light_index, light)| {
+                            (0..NUMBER_CAUSTICS_PER_LIGHT_PER_OBJ)
+                                .filter_map(|_| {
+                                    let ray = light.generate_caustic_dir(caustic_box);
+                                    self.calculate_caustic(
+                                        &ray,
+                                        obj_index,
+                                        light_index,
+                                        light.get_color(),
+                                        0,
+                                    )
+                                })
+                                .collect::<Vec<Photon>>()
+                        })
+                        .collect()
+                } else {
+                    vec![]
+                }
+            })
+            .collect();
+        KdTree::build_by_ordered_float(caustics)
+    }
+
+    // Finds all the photons within a radius from the photon map
+    pub fn get_photons(&self, pos: Vec3, rad: f32) -> Vec<Photon> {
+        if self.photon_map.is_empty() {
+            vec![]
+        } else {
+            self.photon_map
+                .within_radius(&pos.to_array(), rad)
+                .into_iter()
+                .cloned()
+                .collect()
+        }
+    }
+    // Finds all the caustics within a radius
+    pub fn get_caustics(&self, pos: Vec3, rad: f32) -> Vec<Photon> {
+        if self.caustic_map.is_empty() {
+            vec![]
+        } else {
+            self.caustic_map
+                .within_radius(&pos.to_array(), rad)
+                .into_iter()
+                .cloned()
+                .collect()
+        }
+    }
+
+    pub fn material_needs_caustic(&self, mat: usize) -> bool {
+        self.materials[mat].needs_caustic()
     }
 }
 
-// Wrapper necessary for polymorphic traits
+// Wrapper necessary for polymorphic traits for primatives
 #[derive(Debug)]
 struct PrimitiveWrapper {
     primitive: Box<dyn Primitive + Sync + Send>,
@@ -234,6 +395,7 @@ impl Bounded for PrimitiveWrapper {
         self.primitive.aabb()
     }
 }
+
 impl BHShape for PrimitiveWrapper {
     fn set_bh_node_index(&mut self, n: usize) {
         self.primitive.set_bh_node_index(n)

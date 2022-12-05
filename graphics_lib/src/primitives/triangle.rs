@@ -19,7 +19,6 @@ pub struct TrianglePrimitive {
     mat: Mat3,
     d: f32,
     smoothing: bool,
-    material: usize,
     node_index: usize,
     obj_index: usize,
     csg_index: usize,
@@ -35,7 +34,6 @@ impl TrianglePrimitive {
         bn: Vec3,
         cn: Vec3,
         smoothing: bool,
-        material: usize,
         obj_index: usize,
         csg_index: usize,
     ) -> TrianglePrimitive {
@@ -49,7 +47,6 @@ impl TrianglePrimitive {
             mat: Mat3::from_cols(a, b, c).inverse(),
             n,
             d: a.dot(n),
-            material,
             smoothing,
             node_index: 0,
             obj_index,

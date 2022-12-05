@@ -5,6 +5,7 @@ use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
 
+// This material is for debugging purposes and visualises the normals of surfaces
 #[derive(Debug, Clone)]
 pub struct FalseColorMaterial {
     mat_index: usize,
@@ -34,13 +35,31 @@ impl Material for FalseColorMaterial {
 
     fn compute_photon(
         &self,
-        view_ray: Ray,
-        hit: &Hit,
-        scene: &Scene,
-        recurse_depth: usize,
-        recurse_power: Color,
+        _: Ray,
+        _: &Hit,
+        _: &Scene,
+        _: usize,
+        _: Color,
+        _: usize,
     ) -> Vec<Photon> {
         // Note: This is a debugging material so does not support this
         vec![]
+    }
+
+    fn needs_caustic(&self) -> bool {
+        false
+    }
+
+    fn compute_caustic_ray(
+        &self,
+        _view_ray: Ray,
+        _hit: &Hit,
+        _scene: &Scene,
+        _recurse_depth: usize,
+        _light_index: usize,
+        _: Color,
+    ) -> Option<Photon> {
+        // This is a debugging material so does nto support this
+        None
     }
 }

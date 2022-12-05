@@ -1,11 +1,14 @@
 use crate::color::Color;
-use crate::constants::{EPSILON, MAX_RECURSE_DEPTH, MIN_RECURSE_COEFFICIENT};
+use crate::constants::{
+    EPSILON, MAX_PHOTON_RECURSE_DEPTH, MAX_RECURSE_DEPTH, MIN_RECURSE_COEFFICIENT,
+};
 use crate::hit::Hit;
 use crate::materials::material::Material;
 use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use glam::Vec3;
+use rand::Rng;
 
 #[derive(Debug, Clone)]
 pub struct TransparentMaterial {
@@ -21,14 +24,7 @@ impl<'a> TransparentMaterial {
         }
     }
 
-    fn calc_internal_ray(
-        &'a self,
-        ray: Ray,
-        scene: &Scene,
-        recurse_power: Color,
-        recurse_depth: usize,
-        obj_index: usize,
-    ) -> Color {
+    fn find_internal_hit(&self, ray: Ray, obj_index: usize, scene: &Scene) -> Option<Hit> {
         let mut intersections = scene
             .intersection(ray)
             .filter(|h| {
@@ -38,7 +34,18 @@ impl<'a> TransparentMaterial {
 
         intersections.sort_by(|l, r| l.get_distance().partial_cmp(&r.get_distance()).unwrap());
 
-        if let Some(hit) = intersections.first() {
+        intersections.first().cloned()
+    }
+
+    fn calc_internal_ray(
+        &'a self,
+        ray: Ray,
+        scene: &Scene,
+        recurse_power: Color,
+        recurse_depth: usize,
+        obj_index: usize,
+    ) -> Color {
+        if let Some(hit) = self.find_internal_hit(ray, obj_index, scene) {
             let (trans_ray, trans_coeff, refl_ray, refl_coeff) =
                 self.find_rays(-*hit.normal(), ray.direction(), *hit.pos(), false);
 
@@ -72,6 +79,7 @@ impl<'a> TransparentMaterial {
         }
     }
 
+    // Finds the ray directions and powers of ray into a transparent material
     fn find_rays(
         &self,
         normal: Vec3,
@@ -105,13 +113,6 @@ impl<'a> TransparentMaterial {
 
         let refracted_dir = refr_index * incidence + (refr_index * cos_t_i - sqrt) * normal;
 
-        // let r_par = (refr_index * cos_t_i - cos_t_t) / (refr_index * cos_t_i + cos_t_t);
-        // let r_per = (cos_t_i - refr_index * cos_t_t) / (cos_t_i + refr_index * cos_t_t);
-        //
-        // let k_r = (r_par.powi(2) + r_per.powi(2)) / 2.;
-        // let k_r = k_r.min(1.).max(0.);
-        // let k_t = 1. - k_r;
-
         let r_floor = ((refr_index * cos_t_i - sqrt) / (refr_index * cos_t_i + sqrt)).powi(2);
         let r_bb = ((cos_t_i - refr_index * sqrt) / (cos_t_i + refr_index * sqrt)).powi(2);
 
@@ -121,6 +122,116 @@ impl<'a> TransparentMaterial {
         let refracted_ray = Ray::new(pos + refracted_dir * EPSILON, refracted_dir);
 
         (Some(refracted_ray), t_t_i, reflection_ray, r_t_i)
+    }
+
+    // Calculates where a photon ends up from refraction
+    fn calc_photon_internal(
+        &self,
+        view_ray: Ray,
+        hit: &Hit,
+        scene: &Scene,
+        recurse_depth: usize,
+        recurse_power: Color,
+        light_index: usize,
+        inside: bool,
+        caustic: bool,
+    ) -> Vec<Photon> {
+        let (trans_ray, _, refl_ray, refl_coeff) = self.find_rays(
+            if inside {
+                -*hit.normal()
+            } else {
+                *hit.normal()
+            },
+            view_ray.direction(),
+            *hit.pos(),
+            !inside,
+        );
+
+        let mut rng = rand::thread_rng();
+        let i: f32 = rng.gen_range((0.)..1.);
+
+        if recurse_depth > MAX_PHOTON_RECURSE_DEPTH {
+            // println!("Timeout");
+            return vec![];
+        }
+
+        // println!("{}", refl_coeff);
+
+        if i < refl_coeff {
+            // println!("Refl part");
+            // Reflection part
+            if inside {
+                let Some(new_hit) = self.find_internal_hit(refl_ray, hit.get_object_index(), scene) else {
+                    // If refracting internally and doesnt hit an outgoing wall, return nothing
+                    // println!("No internal hit");
+                    return vec![];
+                };
+
+                self.calc_photon_internal(
+                    refl_ray,
+                    &new_hit,
+                    scene,
+                    recurse_depth + 1,
+                    recurse_power,
+                    light_index,
+                    true,
+                    caustic,
+                )
+            } else if caustic {
+                scene
+                    .calculate_caustic(
+                        &refl_ray,
+                        hit.get_object_index(),
+                        light_index,
+                        recurse_power,
+                        recurse_depth,
+                    )
+                    .map_or(vec![], |p| vec![p])
+            } else {
+                scene.calculate_photon_ray(refl_ray, light_index, recurse_depth + 1, recurse_power)
+            }
+        } else {
+            // Transparent part
+            if inside {
+                // If inside, then the transparent part is outside the object to cast photon into outside world
+                if caustic {
+                    scene
+                        .calculate_caustic(
+                            &trans_ray.unwrap(),
+                            hit.get_object_index(),
+                            light_index,
+                            recurse_power,
+                            recurse_depth,
+                        )
+                        .map_or(vec![], |p| vec![p])
+                } else {
+                    scene.calculate_photon_ray(
+                        trans_ray.unwrap(),
+                        light_index,
+                        recurse_depth + 1,
+                        recurse_power,
+                    )
+                }
+            } else {
+                // If outside, then cast photon internally
+                let Some(new_hit) = self.find_internal_hit(trans_ray.unwrap(), hit.get_object_index(), scene) else {
+                    // If doesnt find another material, return nothing
+                    return vec![];
+                };
+
+                // Find the result of firing another ray internally
+                self.calc_photon_internal(
+                    trans_ray.unwrap(),
+                    &new_hit,
+                    scene,
+                    recurse_depth + 1,
+                    recurse_power,
+                    light_index,
+                    true,
+                    caustic,
+                )
+            }
+        }
     }
 }
 
@@ -163,8 +274,6 @@ impl Material for TransparentMaterial {
         };
 
         refl_part + trans_part
-        // trans_part
-        // refl_part
     }
 
     fn update_mat_index(&mut self, i: usize) {
@@ -182,8 +291,45 @@ impl Material for TransparentMaterial {
         scene: &Scene,
         recurse_depth: usize,
         recurse_power: Color,
+        light_index: usize,
     ) -> Vec<Photon> {
-        // TODO: FIX
-        vec![]
+        self.calc_photon_internal(
+            view_ray,
+            hit,
+            scene,
+            recurse_depth,
+            recurse_power,
+            light_index,
+            false,
+            false,
+        )
+    }
+
+    fn needs_caustic(&self) -> bool {
+        true
+    }
+
+    fn compute_caustic_ray(
+        &self,
+        view_ray: Ray,
+        hit: &Hit,
+        scene: &Scene,
+        recurse_depth: usize,
+        light_index: usize,
+        color: Color,
+    ) -> Option<Photon> {
+        // Return the first photon from sending in a caustic ray
+        self.calc_photon_internal(
+            view_ray,
+            hit,
+            scene,
+            recurse_depth,
+            color,
+            light_index,
+            false,
+            true,
+        )
+        .into_iter()
+        .next()
     }
 }

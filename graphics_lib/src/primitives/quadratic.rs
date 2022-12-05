@@ -17,9 +17,9 @@ pub struct QuadraticPrimitive {
 
 impl QuadraticPrimitive {
     pub fn new(mat: Mat4, csg_index: usize, object_index: usize) -> Self {
-        let mat_vals = dbg!(mat.to_cols_array_2d());
+        let mat_vals = mat.to_cols_array_2d();
         Self {
-            values: dbg!([
+            values: [
                 mat_vals[0][0],
                 mat_vals[0][1],
                 mat_vals[0][2],
@@ -30,7 +30,7 @@ impl QuadraticPrimitive {
                 mat_vals[2][2],
                 mat_vals[2][3],
                 mat_vals[3][3],
-            ]),
+            ],
             csg_index,
             object_index,
             bh_index: 0,
@@ -123,20 +123,22 @@ impl Primitive for QuadraticPrimitive {
                         values[0] * p0.x + values[1] * p0.y + values[2] * p0.z + values[3],
                         values[1] * p0.x + values[4] * p0.y + values[5] * p0.z + values[6],
                         values[2] * p0.x + values[5] * p0.y + values[7] * p0.z + values[8],
-                    ),
-                    ray.position().distance(p0),
+                    )
+                    .normalize(),
+                    t0,
                     true,
                     self.object_index,
                     self.csg_index,
                 ),
                 Hit::new(
                     p1,
-                    -Vec3::new(
+                    Vec3::new(
                         values[0] * p1.x + values[1] * p1.y + values[2] * p1.z + values[3],
                         values[1] * p1.x + values[4] * p1.y + values[5] * p1.z + values[6],
                         values[2] * p1.x + values[5] * p1.y + values[7] * p1.z + values[8],
-                    ),
-                    ray.position().distance(p1),
+                    )
+                    .normalize(),
+                    t1,
                     false,
                     self.object_index,
                     self.csg_index,

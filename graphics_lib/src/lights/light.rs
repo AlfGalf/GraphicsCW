@@ -5,8 +5,11 @@ use glam::Vec3;
 use std::fmt::Debug;
 
 pub trait Light: Debug {
-    fn get_intensity(&self, point: Vec3, scene: &Scene) -> Color;
+    fn get_intensity(&self, point: Vec3, scene: &Scene, light_index: usize) -> Color;
     fn get_direction(&self, point: Vec3) -> Vec3;
 
     fn generate_photon_dir(&self) -> Ray;
+    fn generate_caustic_dir(&self, bounds: (Vec3, Vec3)) -> Ray;
+
+    fn get_color(&self) -> Color;
 }
