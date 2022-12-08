@@ -28,7 +28,7 @@ impl Plane {
 impl Object for Plane {
     fn apply_transform(&mut self, t: &Affine3A) {
         self.point = t.transform_point3(self.point);
-        self.normal = t.transform_vector3(self.normal);
+        self.normal = t.transform_vector3(self.normal).normalize();
     }
 
     fn get_material(&self, _: &Hit) -> usize {
@@ -52,6 +52,9 @@ impl Object for Plane {
         hits
     }
 
+    // Cannot find bounds for a plane as it is infinite
+    // If a plane is wanted for part of a caustic object, it vcan be wrapped in a intersection CSG
+    // with a finite object
     fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
         (
             Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),

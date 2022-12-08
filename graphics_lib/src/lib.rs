@@ -1,11 +1,10 @@
-pub mod camera;
+pub mod cameras;
 pub mod color;
 mod constants;
 mod fibonacci_spiral;
 pub mod frame_buffer;
-pub mod hit;
+mod hit;
 pub mod lights;
-pub mod line_drawer;
 pub mod materials;
 pub mod objects;
 mod photon;

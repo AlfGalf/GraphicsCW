@@ -2,6 +2,9 @@ use glam::Vec3;
 use std::iter::Sum;
 use std::ops::{Add, Mul};
 
+// Helper struct to represent any color values in the project
+// Wrapper round the Vec3 from glam
+// Allows for the color arithmetic to be altered
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
     color: Vec3,
@@ -20,43 +23,46 @@ impl Color {
         }
     }
 
-    pub fn magnitude(&self) -> f32 {
-        (self.color.x + self.color.y + self.color.z) / 3.
-    }
-
     pub fn new_black() -> Self {
         Self { color: Vec3::ZERO }
     }
 
-    pub fn red(&self) -> f32 {
+    pub(crate) fn magnitude(&self) -> f32 {
+        (self.color.x + self.color.y + self.color.z) / 3.
+    }
+
+    pub(crate) fn red(&self) -> f32 {
         self.color.x
     }
-    pub fn green(&self) -> f32 {
+    pub(crate) fn green(&self) -> f32 {
         self.color.y
     }
-    pub fn blue(&self) -> f32 {
+    pub(crate) fn blue(&self) -> f32 {
         self.color.z
     }
 
-    pub fn scale(&self, rhs: &Self) -> Self {
+    // Multiplies two colors together piecewise
+    pub(crate) fn piecewise_mul(&self, rhs: &Self) -> Self {
         Self {
             color: self.color * rhs.color,
         }
     }
 
-    pub fn scale_const_mag(&self, c: &Color) -> Color {
-        self.scale(c) * (1. / c.magnitude())
+    // Multiplies with constant magnitude
+    pub(crate) fn mul_const_mag(&self, c: &Color) -> Color {
+        self.piecewise_mul(c) * (1. / c.magnitude())
     }
 
-    pub fn min_val(&self) -> f32 {
+    pub(crate) fn min_val(&self) -> f32 {
         self.color.min_element()
     }
 
-    pub fn max_val(&self) -> f32 {
+    pub(crate) fn max_val(&self) -> f32 {
         self.color.max_element()
     }
 }
 
+// Implements arithmetic operators for Color
 impl Add<Color> for Color {
     type Output = Color;
 

@@ -1,20 +1,16 @@
 extern crate graphics_lib;
 
 use glam::{Affine3A, Vec3};
-use graphics_lib::camera::Camera;
+use graphics_lib::cameras::dof_camera::DoFCamera;
+use graphics_lib::cameras::normal_camera::NormalCamera;
 use graphics_lib::color::Color;
 use graphics_lib::lights::point_light::PointLight;
 use graphics_lib::materials::compound_material::CompoundMaterial;
 use graphics_lib::materials::false_color_material::FalseColorMaterial;
 use graphics_lib::materials::material::Material;
-use graphics_lib::objects::csg::CSGType::Union;
-use graphics_lib::objects::csg::{CSGType, CSG};
-use graphics_lib::objects::cube::Cube;
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
 use graphics_lib::objects::poly_mesh::PolyMesh;
-use graphics_lib::objects::quadratic::Quadratic;
-use graphics_lib::objects::sphere::Sphere;
 use graphics_lib::scene::Scene;
 use std::fs;
 use std::fs::File;
@@ -24,19 +20,19 @@ fn main() {
     let materials: Vec<Box<dyn Material + Sync + Send>> = vec![
         Box::new(CompoundMaterial::new_transparent_material_opacity(
             // 0 -> transparent grey
-            1.04,
-            Color::new(0.7, 0.7, 0.7),
-            0.17,
+            1.2,
+            Color::new(0.9, 1.0, 0.9),
+            0.02,
         )),
         Box::new(CompoundMaterial::new_reflective_material(
             // 1 -> reflective slight green
             Color::new(0.4, 0.8, 0.4),
-            0.6,
+            0.8,
         )),
         Box::new(CompoundMaterial::new_reflective_material(
             // 2 -> Red shiny
             Color::new(1., 0.3, 0.3) * 0.8,
-            0.7,
+            0.5,
         )),
         Box::new(
             CompoundMaterial::new_transparent_material(1.1), // 3 -> Transparent
@@ -90,20 +86,6 @@ fn main() {
         .open("file.ppm")
         .unwrap();
 
-    let mut teapot = PolyMesh::from_file(
-        BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
-        3,
-        true,
-    )
-    .unwrap();
-
-    teapot.apply_transform(&Affine3A::from_cols_array(&[
-        1.0, 0.0, 0.0, // 1
-        0.0, 0.0, 1.0, // 2
-        0.0, 1.0, 0.0, // 3
-        1.0, -1.9, -1.0, //
-    ]));
-
     let mut castle = PolyMesh::from_file(
         BufReader::new(File::open("../castle.kcply").unwrap()),
         4,
@@ -115,37 +97,8 @@ fn main() {
         0.03, 0.0, 0.0, //1
         0.0, 0.0, 0.03, //2
         0.0, 0.03, 0.0, // 3
-        1.0, -2.0, -2.0, //
+        -3.0, -2.0, -3.0, //
     ]));
-
-    let sphere = Sphere::new(
-        Vec3::new(4.4, 2.0, 0.),
-        1.,
-        3,
-        // FalseColorMaterial::new(),
-    );
-
-    let sphere2 = Sphere::new(
-        Vec3::new(0.2, 1.0, 0.),
-        1.,
-        6, // FalseColorMaterial::new(),
-    );
-
-    let sphere3 = Sphere::new(
-        Vec3::new(-1., 2.6, -0.8),
-        0.6,
-        6,
-        // FalseColorMaterial::new(),
-    );
-
-    let plane_cut = Plane::new(Vec3::new(0., 1.2, 0.), Vec3::new(0.1, -0.1, 0.6), 100);
-
-    let sphere4 = Sphere::new(
-        Vec3::new(0.4, -0.5, -1.),
-        2.0,
-        1,
-        // FalseColorMaterial::new(),
-    );
 
     let plane_bottom = Plane::new(
         Vec3::new(0., -2., 0.),
@@ -189,100 +142,71 @@ fn main() {
         9,
     );
 
-    // let union = CSG::new(CSGType::Union, Box::new(sphere), Box::new(sphere2), 0);
-    // let intersection = CSG::new(
-    //     CSGType::Subtract,
-    //     // Box::new(sphere),
-    //     Box::new(CSG::new(
-    //         CSGType::Union,
-    //         Box::new(sphere),
-    //         Box::new(sphere2),
-    //     )),
-    //     Box::new(sphere3),
-    // );
+    let mut teapot_shiny = PolyMesh::from_file(
+        BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
+        1,
+        true,
+    )
+    .unwrap();
 
-    // let csg_cut = CSG::new(
-    //     CSGType::Subtract,
-    //     Box::new(intersection),
-    //     Box::new(plane_cut),
-    // );
+    teapot_shiny.apply_transform(&Affine3A::from_cols_array(&[
+        0.7, 0.0, 0.0, // 1
+        0.0, 0.0, 0.7, // 2
+        0.0, 0.7, 0.0, // 3
+        -1.0, -1.0, -3.0, //
+    ]));
+    teapot_shiny.apply_transform(&Affine3A::from_rotation_x(0.));
 
-    let castle_hole = CSG::new(
-        CSGType::Subtract,
-        // Box::new(sphere),
-        Box::new(castle),
-        Box::new(sphere4),
-    );
+    let mut teapot_trans_green = PolyMesh::from_file(
+        BufReader::new(File::open("../teapot_smaller.ply").unwrap()),
+        0,
+        true,
+    )
+    .unwrap();
 
-    let mut cube = Cube::new(3);
-    cube.apply_transform(
-        &(Affine3A::from_translation(Vec3::new(3., 0., -1.))
-            * Affine3A::from_scale(Vec3::new(1.4, 2., 1.2))
-            * Affine3A::from_rotation_y(0.2)
-            * Affine3A::from_rotation_x(0.1)),
-    );
+    teapot_trans_green.apply_transform(&Affine3A::from_cols_array(&[
+        0.7, 0.0, 0.0, // 1
+        0.0, 0.0, 0.7, // 2
+        0.0, 0.7, 0.0, // 3
+        2.0, -1.4, -0.0, //
+    ]));
 
-    let mut quadratic = Quadratic::new(
-        [
-            1.0, 0., 0., 0., // 1
-            1.0, 0., 0., // 2
-            1.0, 0.,  // 3
-            -1., // 4
-        ],
-        3,
-    );
-
-    quadratic.apply_transform(&Affine3A::from_translation(Vec3::new(0., -2., 0.)));
-
-    // let quadratic = CSG::new(
-    //     Intersection,
-    //     Box::new(quadratic),
-    //     Box::new(Plane::new(
-    //         Vec3::new(0., 0., -3.0),
-    //         Vec3::new(0., 1.4, -1.),
-    //         1,
-    //     )),
-    // );
-
-    let light = PointLight::new(Vec3::new(-2.0, 3.0, -2.0), Color::new(0.9, 0.4, 0.4));
-    let light2 = PointLight::new(Vec3::new(-4.0, 3.0, -15.0), Color::new(0.4, 0.9, 0.4));
+    let light = PointLight::new(Vec3::new(0.1, 3.0, -10.0), Color::new(0.9, 0.4, 0.4));
+    let light2 = PointLight::new(Vec3::new(-4.0, 3.0, -7.0), Color::new(0.4, 0.9, 0.4));
     // let dir_light = DirectionalLight::new(Vec3::new(2.0, -4.0, 2.0), Color::new(0.9, 0.8, 0.85));
+    let main_light = PointLight::new(Vec3::new(2.0, 3.5, -3.0), Color::new(0.4, 0.4, 0.9));
 
     let scene = Scene::new(
         vec![
-            // Box::new(diffuse_sphere),
-            Box::new(teapot),
-            // Box::new(sphere),
-            // Box::new(sphere2),
-            Box::new(sphere3),
-            // Box::new(intersection),
-            // Box::new(csg_cut),
             Box::new(plane_back),
             Box::new(plane_right),
             Box::new(plane_left),
             Box::new(plane_top),
             Box::new(plane_bottom),
             Box::new(plane_front),
-            // Box::new(castle),
-            // Box::new(castle_hole),
-            // Box::new(cube),
-            // Box::new(quadratic),
+            Box::new(teapot_shiny),
+            // Box::new(teapot_trans_green),
         ],
-        vec![
-            Box::new(light),
-            Box::new(light2),
-            // Box::new(dir_light),
-        ],
+        vec![Box::new(main_light), Box::new(light), Box::new(light2)],
         materials,
-        Camera::new(
-            Vec3::new(0., 0., -20.),
-            Vec3::new(0.05, 0.0, 1.0),
+        Box::new(NormalCamera::new(
+            Vec3::new(3., 0., -20.),
+            Vec3::new(-0.10, 0., 1.0),
             Vec3::new(0., 1., 0.),
-            2.,
-        ),
+            1.7,
+        )),
+        // Box::new(DoFCamera::new(
+        //     Vec3::new(3., 0., -20.),
+        //     Vec3::new(-0.10, 0., 1.0),
+        //     Vec3::new(0., 1., 0.),
+        //     1.7,
+        //     10,
+        //     20.,
+        //     0.5,
+        // )),
     );
 
     let fb = scene.render(400, 400);
 
-    File::write_all(&mut file, &(fb.to_rgb_file(2.))).unwrap();
+    File::write_all(&mut file, &(fb.to_rgb_file(0.5))).unwrap();
 }

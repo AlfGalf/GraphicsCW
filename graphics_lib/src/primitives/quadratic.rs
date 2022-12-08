@@ -20,6 +20,7 @@ impl QuadraticPrimitive {
         let mat_vals = mat.to_cols_array_2d();
         Self {
             values: [
+                // Get values from matrix
                 mat_vals[0][0],
                 mat_vals[0][1],
                 mat_vals[0][2],
@@ -48,6 +49,7 @@ impl BHShape for QuadraticPrimitive {
     }
 }
 
+// Cannot easily bound a quadratic
 impl Bounded for QuadraticPrimitive {
     fn aabb(&self) -> AABB {
         AABB::with_bounds(
@@ -69,6 +71,7 @@ impl Primitive for QuadraticPrimitive {
     fn intersection(&self, ray: &Ray) -> Vec<Hit> {
         let values = self.values;
 
+        // This is the equations from the computer graphics slides
         let a = values[0] * ray.direction().x.powi(2)
             + 2. * values[1] * ray.direction().x * ray.direction().y
             + 2. * values[2] * ray.direction().x * ray.direction().z
@@ -106,6 +109,9 @@ impl Primitive for QuadraticPrimitive {
 
         let discriminant = b.powi(2) - 4. * a * c;
 
+        // If discriminant less than 1 (or sufficiently close) no hits
+        // Or if a if sufficiently small, as it will be used as a denominator
+        // so hit would be very far away
         if discriminant < EPSILON || a.abs() < EPSILON {
             vec![]
         } else {

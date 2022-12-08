@@ -6,9 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# Rayon used for threadpools and parallel iterators
+# https://crates.io/crates/rayon
 rayon = "1.5"
+# Glam used for Vectors and other basic linear algebra types
+# https://crates.io/crates/glam
 glam = "0.21.3"
+# bvh used for Bounding volume hierachy
+# https://crates.io/crates/bvh
 bvh = "0.7.0"
+# kd-tree and typenum used for the KD Tree
+# https://crates.io/crates/kd-tree
+# https://crates.io/crates/typenum
 kd-tree = "0.5.0"
 typenum = "1.15.0"
+# rand used for random number generation
+# https://crates.io/crates/rand
 rand = "0.8.5"

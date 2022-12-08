@@ -25,25 +25,28 @@ impl Light for PointLight {
         let distance = point.distance(self.position);
         let ray = Ray::new(self.position, (point - self.position).normalize());
 
-        // If there are not at least 5 direct photons and there are shadow photons,
-        // then send shadow ray
-        if !((scene
-            .get_photons(point, 0.8)
+        // If there are shadow photons and no direct photons, then it is dark,
+        // And vice versa
+        // Otherwise, send a shadow ray
+        let photons = scene.get_photons(point, 0.1);
+        let num_direct = photons
             .iter()
-            .any(|p| p.is_shadow() && p.get_light_index() == light_index)
-            || !scene
-                .get_photons(point, 0.8)
-                .iter()
-                .filter(|p| p.is_direct() && p.get_light_index() == light_index)
-                .count()
-                < 5)
-            && scene.intersection(ray).any(|r| {
-                r.get_dir() && r.get_distance() > 0. && r.get_distance() < distance - EPSILON
-            }))
+            .filter(|p| p.is_direct() && p.get_light_index() == light_index)
+            .count();
+        let num_shadow = photons
+            .iter()
+            .filter(|p| p.is_shadow() && p.get_light_index() == light_index)
+            .count();
+
+        if num_shadow > 2 && num_direct == 0
+            || (!(num_direct > 2 && num_shadow == 0)
+                && scene.intersection(ray).any(|r| {
+                    r.get_dir() && r.get_distance() > 0. && r.get_distance() < distance - EPSILON
+                }))
         {
-            self.color * (1. / ((1. + distance / 10.) * (1. + distance / 10.)))
-        } else {
             Color::new_black()
+        } else {
+            self.color * (1. / ((1. + distance / 10.) * (1. + distance / 10.)))
         }
     }
 

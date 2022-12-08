@@ -15,6 +15,7 @@ pub struct Quadratic {
 impl Quadratic {
     pub fn new(vals: [f32; 10], material: usize) -> Self {
         Self {
+            // Uses a Mat4 internally to make transforms easier
             mat: Mat4::from_cols_array(&[
                 vals[0], vals[1], vals[2], vals[3], //
                 vals[1], vals[4], vals[5], vals[6], //
@@ -52,6 +53,8 @@ impl Object for Quadratic {
         hits
     }
 
+    // Cannot easily bound a quadratic as may be unbounded
+    // Bust be wrapped in an Intersection CSG to by used for caustics
     fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
         (
             Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),

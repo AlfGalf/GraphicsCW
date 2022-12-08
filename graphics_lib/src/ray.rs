@@ -1,28 +1,31 @@
 use glam::Vec3;
 
-#[derive(Copy, Clone)]
+// represents a light ray
+#[derive(Copy, Clone, Debug)]
 pub struct Ray {
     position: Vec3,
     direction: Vec3,
 }
 
 impl Ray {
-    pub fn new(position: Vec3, direction: Vec3) -> Ray {
+    pub(crate) fn new(position: Vec3, direction: Vec3) -> Ray {
         Ray {
             position,
             direction: direction.normalize(),
         }
     }
 
-    pub fn bvh_ray(&self) -> bvh::ray::Ray {
-        bvh::ray::Ray::new(self.position - 100. * self.direction, self.direction)
+    pub(crate) fn bvh_ray(&self) -> bvh::ray::Ray {
+        // Start the BVH ray far back so it passes through all the objects, even those
+        // before the start of the ray
+        bvh::ray::Ray::new(self.position - 1000. * self.direction, self.direction)
     }
 
-    pub fn position(&self) -> Vec3 {
+    pub(crate) fn position(&self) -> Vec3 {
         self.position
     }
 
-    pub fn direction(&self) -> Vec3 {
+    pub(crate) fn direction(&self) -> Vec3 {
         self.direction
     }
 }

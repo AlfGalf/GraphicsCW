@@ -22,15 +22,7 @@ impl Material for FalseColorMaterial {
             (hit.normal().x + 1.0) * 0.5,
             (hit.normal().y + 1.0) * 0.5,
             (hit.normal().z + 1.0) * 0.5,
-        )
-    }
-
-    fn update_mat_index(&mut self, i: usize) {
-        self.mat_index = i
-    }
-
-    fn get_mat_index(&self) -> usize {
-        self.mat_index
+        ) * 0.2
     }
 
     fn compute_photon(

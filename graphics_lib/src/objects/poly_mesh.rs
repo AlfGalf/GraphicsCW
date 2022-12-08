@@ -9,6 +9,7 @@ use std::io::{BufRead, BufReader};
 
 #[derive(Debug, Clone)]
 pub struct Triangle {
+    // Indices into vertex in polymesh array
     an: usize,
     bn: usize,
     cn: usize,
@@ -17,8 +18,10 @@ pub struct Triangle {
 
 #[derive(Debug)]
 struct Vertex {
+    // indices of surrounding triangles
     pub(crate) triangles: Vec<usize>,
     p: Vec3,
+    // Normal may be calculated for smoothing
     normal: Option<Vec3>,
 }
 
@@ -28,6 +31,7 @@ impl Vertex {
     }
 
     pub fn compute_normal(&mut self, tr: &[Triangle]) {
+        // Average of the the triangles it is part of
         self.normal = Some({
             let normal_sum = self
                 .triangles
@@ -71,6 +75,8 @@ pub struct PolyMesh {
 }
 
 impl PolyMesh {
+    // Makes a Polymesh from a file
+    // Note this can fail!
     pub fn from_file(
         file: BufReader<File>,
         material: usize,
@@ -164,6 +170,7 @@ impl PolyMesh {
 
         let mut faces = Vec::with_capacity(num_faces as usize);
 
+        // Populates faces vector
         for i in 0..num_faces {
             faces.push({
                 let line = lines
@@ -218,6 +225,7 @@ impl PolyMesh {
             csg_index: 0,
         };
 
+        // After faces vector populated, then the triangles normals can be calculated
         for v in pm.vertices.iter_mut() {
             v.compute_normal(&pm.triangles);
         }
@@ -228,6 +236,7 @@ impl PolyMesh {
 
 impl Object for PolyMesh {
     fn apply_transform(self: &mut PolyMesh, tr: &Affine3A) {
+        // After transforming normals must be recomputed
         for v in self.vertices.iter_mut() {
             v.apply_transform(tr);
         }
@@ -271,15 +280,12 @@ impl Object for PolyMesh {
             .collect()
     }
 
-    fn needs_caustic(&self, scene: &Scene) -> bool {
-        scene.material_needs_caustic(self.material)
-    }
-
     fn filter_hits(&self, hits: Vec<Hit>, _: usize) -> Vec<Hit> {
         hits
     }
 
     fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+        // Find the upper and lower bounds of the vertices of the triangles
         self.triangles.iter().fold(
             (
                 Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
@@ -298,5 +304,9 @@ impl Object for PolyMesh {
                 )
             },
         )
+    }
+
+    fn needs_caustic(&self, scene: &Scene) -> bool {
+        scene.material_needs_caustic(self.material)
     }
 }

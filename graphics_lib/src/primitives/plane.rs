@@ -37,6 +37,7 @@ impl BHShape for PlanePrimitive {
     }
 }
 
+// Cannot bound a plane, so give infinite bounds
 impl Bounded for PlanePrimitive {
     fn aabb(&self) -> AABB {
         AABB::with_bounds(

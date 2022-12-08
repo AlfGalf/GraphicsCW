@@ -1,13 +1,10 @@
 use crate::color::Color;
+use crate::constants::{CAUSTIC_RAD, PHOTON_RAD};
 use crate::hit::Hit;
 use crate::materials::material::Material;
-use crate::photon::PhotonType::Caustic;
 use crate::photon::{Photon, PhotonType};
 use crate::ray::Ray;
 use crate::scene::Scene;
-
-const PHOTON_RAD: f32 = 0.8;
-const CAUSTIC_RAD: f32 = 0.05;
 
 // This material adds the photon mapping global illuminations
 #[derive(Clone, Debug)]
@@ -23,44 +20,37 @@ impl AmbientMaterial {
 
 impl Material for AmbientMaterial {
     fn compute(&self, _: Ray, hit: &Hit, _: Color, scene: &Scene, _: usize, _: Color) -> Color {
-        let mut photons = scene
+        // Finds all photons within the radius that are indirect photons
+        let photons = scene
             .get_photons(*hit.pos(), PHOTON_RAD)
             .into_iter()
             .filter(|p| {
-                !matches!(p.get_type(), PhotonType::Shadow) && p.get_obj() == hit.get_object_index()
+                matches!(p.get_type(), PhotonType::Indirect(_))
+                    && p.get_obj() == hit.get_object_index()
             })
             .collect::<Vec<Photon>>();
 
-        photons.sort_by(|p1, p2| {
-            hit.pos()
-                .distance(p1.get_pos())
-                .total_cmp(&hit.pos().distance(p2.get_pos()))
-        });
+        // Sums the intensity of all the surrounding photons with a cone shaped
+        // average (Jensen photon mapping)
+        let photon_map_col =
+            photons
+                .iter()
+                .fold(Color::new_black(), |col, photon| match photon.get_type() {
+                    PhotonType::Indirect(c) => {
+                        col + c
+                            * ((PHOTON_RAD * PHOTON_RAD
+                                - photon.get_pos().distance_squared(*hit.pos()))
+                                / (PHOTON_RAD * PHOTON_RAD))
+                    }
+                    _ => panic!("There should not be these types of photon here"),
+                });
 
-        let col = photons
-            .iter()
-            .fold(Color::new_black(), |col, photon| match photon.get_type() {
-                PhotonType::Direct(c) => {
-                    col + c
-                        * ((PHOTON_RAD * PHOTON_RAD
-                            - photon.get_pos().distance_squared(*hit.pos()))
-                            / (PHOTON_RAD * PHOTON_RAD))
-                }
-                PhotonType::Indirect(c) => {
-                    col + c
-                        * ((PHOTON_RAD * PHOTON_RAD
-                            - photon.get_pos().distance_squared(*hit.pos()))
-                            / (PHOTON_RAD * PHOTON_RAD))
-                }
-                PhotonType::Shadow => col,
-                PhotonType::Caustic(_) => panic!("There should not be caustics here"),
-            });
-
+        // Do the same for caustics, find them in a much smaller radius though
         let caustic_part = scene
             .get_caustics(*hit.pos(), CAUSTIC_RAD)
             .into_iter()
             .fold(Color::new_black(), |c, p| match p.get_type() {
-                Caustic(col) => {
+                PhotonType::Caustic(col) => {
                     c + col
                         * ((CAUSTIC_RAD.powi(2) - p.get_pos().distance_squared(*hit.pos()))
                             / (CAUSTIC_RAD.powi(2)))
@@ -69,15 +59,9 @@ impl Material for AmbientMaterial {
                 _ => panic!("Should not be other types of photon in the caustic map"),
             });
 
-        col * (1. / (photons.len() as f32).sqrt()) + caustic_part
-    }
-
-    fn update_mat_index(&mut self, i: usize) {
-        self.mat_index = i
-    }
-
-    fn get_mat_index(&self) -> usize {
-        self.mat_index
+        // Divide the photon map light intensity by the square root of the number of
+        //  photons, this softens the noise
+        photon_map_col * (1. / (photons.len() as f32).sqrt()) + caustic_part
     }
 
     fn compute_photon(
@@ -90,7 +74,6 @@ impl Material for AmbientMaterial {
         light_index: usize,
     ) -> Vec<Photon> {
         // Absorb photon
-        // println!("test");
         vec![Photon::new_indirect(
             *hit.pos(),
             light_index,

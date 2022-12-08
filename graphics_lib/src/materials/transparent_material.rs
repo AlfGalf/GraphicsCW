@@ -24,10 +24,14 @@ impl<'a> TransparentMaterial {
         }
     }
 
+    // This function finds the exit point of a ray internal to a material
+    // This optionally returns a hit as it might not find one for objects not completely enclosed
+    // eg. planes
     fn find_internal_hit(&self, ray: Ray, obj_index: usize, scene: &Scene) -> Option<Hit> {
         let mut intersections = scene
             .intersection(ray)
             .filter(|h| {
+                // Find the first hit at least distance from this object with the same object index
                 (!h.get_dir()) && h.get_distance() > EPSILON && h.get_object_index() == obj_index
             })
             .collect::<Vec<Hit>>();
@@ -37,49 +41,8 @@ impl<'a> TransparentMaterial {
         intersections.first().cloned()
     }
 
-    fn calc_internal_ray(
-        &'a self,
-        ray: Ray,
-        scene: &Scene,
-        recurse_power: Color,
-        recurse_depth: usize,
-        obj_index: usize,
-    ) -> Color {
-        if let Some(hit) = self.find_internal_hit(ray, obj_index, scene) {
-            let (trans_ray, trans_coeff, refl_ray, refl_coeff) =
-                self.find_rays(-*hit.normal(), ray.direction(), *hit.pos(), false);
-
-            let refl_power = recurse_power * refl_coeff;
-            let trans_power = recurse_power * trans_coeff;
-
-            let refl_part = if refl_power.max_val() > MIN_RECURSE_COEFFICIENT
-                && recurse_depth < MAX_RECURSE_DEPTH
-            {
-                self.calc_internal_ray(refl_ray, scene, refl_power, recurse_depth + 1, obj_index)
-                    * refl_coeff
-                // scene.calc_ray(refl_ray, refl_power, recurse_depth + 1).0 * refl_coeff
-            } else {
-                Color::new_black()
-            };
-
-            let trans_part = if trans_power.max_val() > MIN_RECURSE_COEFFICIENT
-                && recurse_depth < MAX_RECURSE_DEPTH
-            {
-                scene
-                    .calc_ray(trans_ray.unwrap(), trans_power, recurse_depth + 1)
-                    .0
-                    * trans_coeff
-            } else {
-                Color::new_black()
-            };
-
-            refl_part + trans_part
-        } else {
-            scene.calc_ray(ray, recurse_power, recurse_depth + 1).0
-        }
-    }
-
     // Finds the ray directions and powers of ray into a transparent material
+    // This finds the ray direction and the Fresnel equations
     fn find_rays(
         &self,
         normal: Vec3,
@@ -98,6 +61,7 @@ impl<'a> TransparentMaterial {
 
         let cos_t_i = -(normal).dot(incidence);
 
+        // Finds the reflection direction
         let reflection_dir = incidence + 2. * (cos_t_i) * normal;
         let reflection_dir = reflection_dir.normalize();
         let reflection_ray = Ray::new(pos + reflection_dir * EPSILON, reflection_dir);
@@ -105,14 +69,16 @@ impl<'a> TransparentMaterial {
         let sin_2_t_i = refr_index.powi(2) * (1. - cos_t_i.powi(2));
 
         if sin_2_t_i > 1. {
-            // Total internal reflection
+            // Total reflection case
             return (None, 0., reflection_ray, 1.);
         }
 
         let sqrt = (1. - sin_2_t_i).sqrt();
 
+        // Finds the refracted direction
         let refracted_dir = refr_index * incidence + (refr_index * cos_t_i - sqrt) * normal;
 
+        // Calculation of the fresnel euqations
         let r_floor = ((refr_index * cos_t_i - sqrt) / (refr_index * cos_t_i + sqrt)).powi(2);
         let r_bb = ((cos_t_i - refr_index * sqrt) / (cos_t_i + refr_index * sqrt)).powi(2);
 
@@ -122,6 +88,58 @@ impl<'a> TransparentMaterial {
         let refracted_ray = Ray::new(pos + refracted_dir * EPSILON, refracted_dir);
 
         (Some(refracted_ray), t_t_i, reflection_ray, r_t_i)
+    }
+
+    // This function calculates the color of an internal ray, it is recursive
+    // This finds only the internal part of a hit,
+    // eg. the trasmitted part of a hit from outside, or the reflected part of
+    //      an internal ray
+    fn calc_internal_ray(
+        &'a self,
+        ray: Ray,
+        scene: &Scene,
+        recurse_power: Color,
+        recurse_depth: usize,
+        obj_index: usize,
+    ) -> Color {
+        if let Some(hit) = self.find_internal_hit(ray, obj_index, scene) {
+            // If it finds an internal hit then consider reflection and refraciton of the internal hit
+            let (trans_ray, trans_coeff, refl_ray, refl_coeff) =
+                self.find_rays(-*hit.normal(), ray.direction(), *hit.pos(), false);
+
+            // The reflected and transmitted coefficients
+            let refl_power = recurse_power * refl_coeff;
+            let trans_power = recurse_power * trans_coeff;
+
+            // Finds the result of the reflection part
+            // Skips if the coefficient is too small or if the recurse depth too great
+            let refl_part = if refl_power.max_val() > MIN_RECURSE_COEFFICIENT
+                && recurse_depth < MAX_RECURSE_DEPTH
+            {
+                self.calc_internal_ray(refl_ray, scene, refl_power, recurse_depth + 1, obj_index)
+                    * refl_coeff
+            } else {
+                Color::new_black()
+            };
+
+            // Finds the result of the transmitted part
+            // Skips if the coefficient is too small or if the recurse depth too great
+            let trans_part = if trans_power.max_val() > MIN_RECURSE_COEFFICIENT
+                && recurse_depth < MAX_RECURSE_DEPTH
+            {
+                scene
+                    .calc_ray(trans_ray.unwrap(), trans_power, recurse_depth + 1)
+                    .0
+                    * trans_coeff
+            } else {
+                Color::new_black()
+            };
+
+            refl_part + trans_part
+        } else {
+            // If no internal hit found, just send the ray into the scene
+            scene.calc_ray(ray, recurse_power, recurse_depth + 1).0
+        }
     }
 
     // Calculates where a photon ends up from refraction
@@ -136,7 +154,15 @@ impl<'a> TransparentMaterial {
         inside: bool,
         caustic: bool,
     ) -> Vec<Photon> {
+        // If exceeded recurse depth, skip
+        if recurse_depth > MAX_PHOTON_RECURSE_DEPTH {
+            // println!("Timeout");
+            return vec![];
+        }
+
+        // Finds the result ray directions
         let (trans_ray, _, refl_ray, refl_coeff) = self.find_rays(
+            // If inside the object reverse the normal direciton
             if inside {
                 -*hit.normal()
             } else {
@@ -147,16 +173,11 @@ impl<'a> TransparentMaterial {
             !inside,
         );
 
+        // Generates random number for Monte Carlo method
         let mut rng = rand::thread_rng();
         let i: f32 = rng.gen_range((0.)..1.);
 
-        if recurse_depth > MAX_PHOTON_RECURSE_DEPTH {
-            // println!("Timeout");
-            return vec![];
-        }
-
-        // println!("{}", refl_coeff);
-
+        // If in the refleciton part
         if i < refl_coeff {
             // println!("Refl part");
             // Reflection part
@@ -178,6 +199,7 @@ impl<'a> TransparentMaterial {
                     caustic,
                 )
             } else if caustic {
+                // If refraction part AND this is a caustic
                 scene
                     .calculate_caustic(
                         &refl_ray,
@@ -187,7 +209,10 @@ impl<'a> TransparentMaterial {
                         recurse_depth,
                     )
                     .map_or(vec![], |p| vec![p])
+                // Wrap the single photon into a vector for the recursion
+                // This inefficiency dramatically reduces the amount of logic required
             } else {
+                // If refraction part AND this is NOT a caustic
                 scene.calculate_photon_ray(refl_ray, light_index, recurse_depth + 1, recurse_power)
             }
         } else {
@@ -204,6 +229,7 @@ impl<'a> TransparentMaterial {
                             recurse_depth,
                         )
                         .map_or(vec![], |p| vec![p])
+                    // Otherwise throw the photon ray into the world
                 } else {
                     scene.calculate_photon_ray(
                         trans_ray.unwrap(),
@@ -245,12 +271,14 @@ impl Material for TransparentMaterial {
         recurse_depth: usize,
         recurse_power: Color,
     ) -> Color {
+        // Calculates ray directions and fresnel coefficients for the reflected and transmitted part
         let (trans_ray, trans_coeff, refl_ray, refl_coeff) =
             self.find_rays(*hit.normal(), view_ray.direction(), *hit.pos(), true);
 
         let refl_power = recurse_power * refl_coeff;
         let trans_power = recurse_power * trans_coeff;
 
+        // Only calculate if coefficient big enough and not exceeded recurse depth
         let refl_part = if refl_power.max_val() > MIN_RECURSE_COEFFICIENT
             && recurse_depth < MAX_RECURSE_DEPTH
         {
@@ -259,6 +287,7 @@ impl Material for TransparentMaterial {
             Color::new_black()
         };
 
+        // Only calculate if coefficient big enough and not exceeded recurse depth
         let trans_part = if trans_power.max_val() > MIN_RECURSE_COEFFICIENT
             && recurse_depth < MAX_RECURSE_DEPTH
         {
@@ -276,14 +305,6 @@ impl Material for TransparentMaterial {
         refl_part + trans_part
     }
 
-    fn update_mat_index(&mut self, i: usize) {
-        self.mat_index = i
-    }
-
-    fn get_mat_index(&self) -> usize {
-        self.mat_index
-    }
-
     fn compute_photon(
         &self,
         view_ray: Ray,
@@ -293,6 +314,7 @@ impl Material for TransparentMaterial {
         recurse_power: Color,
         light_index: usize,
     ) -> Vec<Photon> {
+        // Calls the recursive method
         self.calc_photon_internal(
             view_ray,
             hit,
@@ -305,6 +327,7 @@ impl Material for TransparentMaterial {
         )
     }
 
+    // Transparent objects DO need caustic photons
     fn needs_caustic(&self) -> bool {
         true
     }

@@ -36,6 +36,7 @@ impl CSG {
 }
 
 impl Object for CSG {
+    // Apply transform to each child
     fn apply_transform(&mut self, t: &Affine3A) {
         self.left.apply_transform(t);
         self.right.apply_transform(t);
@@ -44,22 +45,24 @@ impl Object for CSG {
     // Works out which child object the hit belonged to.
     //      Uses the CSG index to index into the tree
     fn get_material(&self, hit: &Hit) -> usize {
-        match self.csg_type {
-            CSGType::Subtract => self.left.get_material(hit),
-            _ => {
-                if let Some(is_left) = is_node_left(self.csg_index, hit.get_csg_index()) {
-                    if is_left {
-                        self.left.get_material(hit)
-                    } else {
-                        self.right.get_material(hit)
-                    }
-                } else {
-                    self.left.get_material(hit)
-                }
+        if let Some(is_left) = is_node_left(self.csg_index, hit.get_csg_index()) {
+            if is_left {
+                self.left.get_material(hit)
+            } else {
+                self.right.get_material(hit)
             }
+        } else {
+            self.left.get_material(hit)
         }
     }
 
+    // Populates the SCG index tree.
+    // eg.     1
+    //        / \
+    //       2   3
+    //          / \
+    //         6   7
+    // This is used later to identify what side of the tree each hit belongs to
     fn set_csg_index(&mut self, csg_index: usize) {
         self.csg_index = csg_index;
         self.left.set_csg_index(csg_index * 2);
@@ -74,9 +77,11 @@ impl Object for CSG {
 
     // Filters and modifies the hits to remove the CSG hits that dont exist
     fn filter_hits<'a>(&self, hits: Vec<Hit>, index: usize) -> Vec<Hit> {
+        // Applies the filtering of the children first
         let hits = self.left.filter_hits(hits, index);
         let hits = self.right.filter_hits(hits, index);
 
+        // Does the ray start inside either of the objects?
         let mut inside_left = {
             hits.iter()
                 .find(|h| {
@@ -97,8 +102,8 @@ impl Object for CSG {
         let mut prev_inside_left = inside_left;
         let mut prev_inside_right = inside_right;
 
-        let output = hits
-            .into_iter()
+        // Iterate through the hits and apply the CSG logic for each case
+        hits.into_iter()
             .filter_map(|mut h| {
                 if h.get_object_index() != index {
                     Some(h)
@@ -176,8 +181,7 @@ impl Object for CSG {
                     Some(h)
                 }
             })
-            .collect();
-        output
+            .collect()
     }
 
     // Computes a bounding box for a CSG

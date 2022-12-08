@@ -35,11 +35,13 @@ impl Material for SpecularMaterial {
         _: usize,
         _: Color,
     ) -> Color {
+        // finds the reflection direction of the ray viewing this point
         let reflection_dir: Vec3 =
             view_ray.direction() - 2. * (view_ray.direction().dot(*hit.normal())) * *hit.normal();
 
         let reflection_dir = reflection_dir.normalize();
 
+        // Calculate for each light then sum the results
         scene
             .get_lights()
             .iter()
@@ -48,18 +50,12 @@ impl Material for SpecularMaterial {
                 let intensity = light.get_intensity(*hit.pos(), scene, i);
                 let dir = light.get_direction(*hit.pos());
 
+                // Calculates the specular coefficient of this light
+                // Phong lighing model
                 let specular = reflection_dir.dot(-dir).powi(self.power as i32).max(0.);
 
                 c + intensity * specular
             })
-    }
-
-    fn update_mat_index(&mut self, i: usize) {
-        self.mat_index = i
-    }
-
-    fn get_mat_index(&self) -> usize {
-        self.mat_index
     }
 
     fn compute_photon(

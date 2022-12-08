@@ -24,6 +24,7 @@ pub struct CompoundMaterial {
 
 impl CompoundMaterial {
     pub fn new(materials: Vec<(Box<dyn Material + Sync + Send>, f32)>, color: Color) -> Self {
+        // Scales the weights to they add to 1
         let scale = 1. / materials.iter().fold(0., |ct, (_, weight)| ct + weight);
 
         CompoundMaterial {
@@ -36,6 +37,7 @@ impl CompoundMaterial {
         }
     }
 
+    // Helper constructor to make a sensible matte material
     pub fn new_matte_material(col: Color, specular: f32) -> CompoundMaterial {
         assert!(1. >= specular);
         assert!(0. <= specular);
@@ -55,6 +57,7 @@ impl CompoundMaterial {
         )
     }
 
+    // Helper constructor to make a sensible reflective material
     pub fn new_reflective_material(col: Color, reflectivity: f32) -> CompoundMaterial {
         assert!(1. >= reflectivity);
         assert!(0. <= reflectivity);
@@ -73,6 +76,7 @@ impl CompoundMaterial {
         )
     }
 
+    // Helper constructor to make a sensible transparent material
     pub fn new_transparent_material(refractive_index: f32) -> CompoundMaterial {
         CompoundMaterial::new(
             vec![
@@ -92,6 +96,8 @@ impl CompoundMaterial {
         )
     }
 
+    // Helper constructor to make a transparent material with a bit of matte
+    //  material also
     pub fn new_transparent_material_opacity(
         refractive_index: f32,
         color: Color,
@@ -127,6 +133,7 @@ impl Material for CompoundMaterial {
         recurse_depth: usize,
         recurse_power: Color,
     ) -> Color {
+        // Computes for each child material and sums them multiplied by their weights
         self.materials
             .iter()
             .fold(Color::new_black(), |tc, (m, w)| {
@@ -137,22 +144,11 @@ impl Material for CompoundMaterial {
                         ambient,
                         scene,
                         recurse_depth,
-                        recurse_power.scale(&self.color) * *w,
+                        recurse_power.piecewise_mul(&self.color) * *w,
                     )
-                    .scale(&self.color)
+                    .piecewise_mul(&self.color)
                     * *w
             })
-    }
-
-    fn update_mat_index(&mut self, i: usize) {
-        self.materials
-            .iter_mut()
-            .for_each(|m| m.0.update_mat_index(i));
-        self.mat_index = i
-    }
-
-    fn get_mat_index(&self) -> usize {
-        self.mat_index
     }
 
     fn compute_photon(
@@ -167,6 +163,8 @@ impl Material for CompoundMaterial {
         let mut rng = rand::thread_rng();
         let mut i: f32 = rng.gen_range((0.)..1.);
 
+        // Randomly chooses a child material to send the photon from
+        // This is the Monte Carlo implementation
         let mat = {
             let mut res = self.materials.first().unwrap();
             for mat in self.materials.iter() {
@@ -184,22 +182,29 @@ impl Material for CompoundMaterial {
             hit,
             scene,
             recurse_depth,
-            recurse_power.scale_const_mag(&self.color),
+            recurse_power.mul_const_mag(&self.color),
             light_index,
         );
+
+        // Also add an indirect photon at this point
         res.push(Photon::new_indirect(
             *hit.pos(),
             light_index,
             recurse_power,
             hit.get_object_index(),
         ));
+
         res
     }
 
+    // Returns true if any child material needs a caustic
     fn needs_caustic(&self) -> bool {
         self.materials.iter().any(|(m, _)| m.needs_caustic())
     }
 
+    // Returns the caustic of only one of the child materials that make caustics
+    // This is because each compound material should have at most one transparent
+    //  child material
     fn compute_caustic_ray(
         &self,
         view_ray: Ray,
@@ -219,9 +224,9 @@ impl Material for CompoundMaterial {
                     scene,
                     recurse_depth,
                     light_index,
-                    color.scale(&self.color),
+                    color.piecewise_mul(&self.color),
                 )
             })
-            .next()
+            .next() // this selects only the first caustic from the children
     }
 }

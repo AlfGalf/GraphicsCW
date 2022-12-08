@@ -5,7 +5,7 @@ use kd_tree::KdPoint;
 #[derive(Debug, Clone, Copy)]
 pub enum PhotonType {
     Shadow,
-    Direct(Color),
+    Direct,
     Indirect(Color),
     Caustic(Color),
 }
@@ -34,10 +34,10 @@ impl Photon {
         }
     }
 
-    pub fn new_direct(pos: Vec3, light_index: usize, color: Color, obj: usize) -> Self {
+    pub fn new_direct(pos: Vec3, light_index: usize, obj: usize) -> Self {
         Self {
             pos: pos.to_array(),
-            p_type: PhotonType::Direct(color),
+            p_type: PhotonType::Direct,
             light_index,
             obj,
         }
@@ -66,7 +66,7 @@ impl Photon {
     }
 
     pub fn is_direct(&self) -> bool {
-        matches!(self.p_type, PhotonType::Direct(_))
+        matches!(self.p_type, PhotonType::Direct)
     }
 
     pub fn get_light_index(&self) -> usize {

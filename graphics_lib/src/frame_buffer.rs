@@ -1,15 +1,16 @@
 use crate::color::Color;
 
 #[derive(Clone, Debug)]
-pub struct Pixel {
+pub(crate) struct Pixel {
     pub red: f32,
     pub green: f32,
     pub blue: f32,
     pub depth: f32,
 }
 
+// Represents a pixel in a scene
 impl Pixel {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Pixel {
             red: 0.,
             green: 0.,
@@ -18,16 +19,7 @@ impl Pixel {
         }
     }
 
-    pub fn from_colors(r: f32, g: f32, b: f32, d: f32) -> Self {
-        Pixel {
-            red: r,
-            green: g,
-            blue: b,
-            depth: d,
-        }
-    }
-
-    pub fn from_color(color: Color, d: f32) -> Self {
+    pub(crate) fn from_color(color: Color, d: f32) -> Self {
         Pixel {
             red: color.red(),
             green: color.green(),
@@ -37,6 +29,7 @@ impl Pixel {
     }
 }
 
+// Frame buffer to store image before outputting
 #[derive(Debug)]
 pub struct FrameBuffer {
     pub width: usize,
@@ -53,6 +46,7 @@ impl FrameBuffer {
         }
     }
 
+    // Adds color for a pixel
     pub fn plot_pixel(&mut self, x: usize, y: usize, red: f32, green: f32, blue: f32) {
         let x = x.max(0).min(self.width - 1);
         let y = y.max(0).min(self.height - 1);
@@ -61,21 +55,18 @@ impl FrameBuffer {
         self.frame_buffer[y * self.width + x].blue = blue;
     }
 
+    // Adds depth imformation for a pixel
     pub fn plot_depth(&mut self, x: usize, y: usize, depth: f32) {
         let x = x.max(0).min(self.width - 1);
         let y = y.max(0).min(self.height - 1);
         self.frame_buffer[y * self.width + x].depth = depth;
     }
 
-    pub fn get_pixel(&self, x: usize, y: usize) -> &Pixel {
-        assert!(x < self.width);
-        assert!(y < self.height);
-        &self.frame_buffer[y * self.width + x]
-    }
-
+    // Outputs a a stream of bytes that makeup a PPM file for image
     pub fn to_rgb_file(&self, cap: f32) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::new();
 
+        // Square roots every pixel in the image and caps the brightness
         let out_pixels: Vec<Pixel> = self
             .frame_buffer
             .iter()
@@ -91,6 +82,7 @@ impl FrameBuffer {
             })
             .collect();
 
+        // Finds maximum and minimum values to scale the image by
         let max_val = out_pixels.iter().fold(f32::MIN, |prev: f32, pixel| {
             prev.max(pixel.red).max(pixel.green).max(pixel.blue)
         });
@@ -120,6 +112,7 @@ impl FrameBuffer {
         output
     }
 
+    // Outputs a byte stream for a PPM file of the depth of the image
     pub fn to_depth_file(&self) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::new();
 

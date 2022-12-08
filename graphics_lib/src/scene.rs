@@ -1,4 +1,4 @@
-use crate::camera::Camera;
+use crate::cameras::camera::Camera;
 use crate::color::Color;
 use crate::constants::{
     EPSILON, MAX_PHOTON_RECURSE_DEPTH, MIN_RECURSE_COEFFICIENT, NUMBER_CAUSTICS_PER_LIGHT_PER_OBJ,
@@ -27,7 +27,7 @@ pub struct Scene {
     primitives: Vec<PrimitiveWrapper>,
     materials: Vec<Box<dyn Material + Sync + Send>>,
     objects: Vec<Box<dyn Object + Sync + Send>>,
-    camera: Camera,
+    camera: Box<dyn Camera + Sync + Send>,
     // The Bounding View Hierarchy data structure is an external crate
     // https://crates.io/crates/bvh
     bvh: BVH,
@@ -42,7 +42,7 @@ impl Scene {
         objects: Vec<Box<dyn Object + Sync + Send>>,
         lights: Vec<Box<dyn Light + Sync + Send>>,
         materials: Vec<Box<dyn Material + Sync + Send>>,
-        camera: Camera,
+        camera: Box<dyn Camera + Sync + Send>,
     ) -> Scene {
         // Store objects and populate each objects CSG tree indices
         let mut objects = objects;
@@ -60,16 +60,6 @@ impl Scene {
 
         // Build the bounding view hierarchy for the scene
         let bvh = BVH::build(&mut primitives);
-
-        // Tell each material its index (necessary for refraction logic)
-        let materials = materials
-            .into_iter()
-            .enumerate()
-            .map(|(i, mut m)| {
-                m.update_mat_index(i);
-                m
-            })
-            .collect();
 
         let mut scene = Scene {
             lights,
@@ -117,6 +107,7 @@ impl Scene {
             .filter(|s| s.get_dir() && s.get_distance() > 0.)
             .collect::<Vec<Hit>>();
 
+        // Only consider the case where it hits something, otherwise return black
         if let Some(v) = intersections.first() {
             (
                 self.materials[self.objects[v.get_object_index()].get_material(v)].compute(
@@ -142,26 +133,46 @@ impl Scene {
         let pixels: Vec<(usize, usize, Pixel)> = (0..height)
             .collect::<Vec<usize>>()
             .par_iter() // Parallel iterator, courtesy of Rayon
+            // https://crates.io/crates/rayon
             .map(move |y| {
+                // println!("line {} done", *y);
                 (0..width)
                     .map(|x| {
-                        let ray = self.camera.ray(
+                        let rays = self.camera.rays(
                             (2. * (x as f32) - width as f32) / width as f32,
                             (2. * -(*y as f32) + height as f32) / width as f32,
                         );
 
-                        let res = self.calc_ray(ray, Color::new(1., 1., 1.), 0);
+                        // For each ray the camera gives calculate, then average the result
+                        let (col_acc, depth_acc) = rays.iter().fold(
+                            (Color::new_black(), 0.),
+                            |(col_acc, depth_acc), ray| {
+                                let (col, depth) = self.calc_ray(*ray, Color::new_grey(1.), 0);
 
-                        (x, *y, Pixel::from_color(res.0, res.1))
+                                (col_acc + col, depth_acc + depth)
+                            },
+                        );
+
+                        // Return the resulting pixel
+                        (
+                            x,
+                            *y,
+                            Pixel::from_color(
+                                col_acc * (1. / rays.len() as f32),
+                                depth_acc / rays.len() as f32,
+                            ),
+                        )
                     })
                     .collect::<Vec<(usize, usize, Pixel)>>()
             })
             .flatten()
             .collect();
-        println!("-- Done rendering --");
-        // Doesnt populate the FrameBuffer in parallel to avoid memory safety
 
-        // From the pixels
+        println!("-- Done rendering --");
+        // Doesnt populate the FrameBuffer in parallel to avoid parallel
+        //  memory safety diffculties
+
+        // From the frame buffer from the pixel results
         pixels.iter().for_each(|(x, y, p)| {
             fb.plot_pixel(*x, *y, p.red, p.green, p.blue);
             fb.plot_depth(*x, *y, p.depth);
@@ -195,6 +206,7 @@ impl Scene {
         hits.into_iter()
     }
 
+    // Calculates the photon map for the scene
     fn photon_map(&self) -> KdTree<Photon> {
         let photons: Vec<Photon> = self
             .lights
@@ -216,6 +228,7 @@ impl Scene {
     }
 
     // Calculates a list of photons for a ray of light in a scene
+    // This can be called recursively by the materials
     pub fn calculate_photon_ray(
         &self,
         ray: Ray,
@@ -233,15 +246,14 @@ impl Scene {
             return vec![];
         };
 
+        // Only add a direct photon if this is the first hit
         let mut res = if recurse_depth == 0 {
             vec![Photon::new_direct(
                 *direct_hit.pos(),
                 light_index,
-                recurse_power,
                 direct_hit.get_object_index(),
             )]
         } else {
-            // Photon::new_indirect(*direct_hit.pos(), light_index, recurse_power)
             vec![]
         };
 
@@ -276,6 +288,7 @@ impl Scene {
     }
 
     // Calculates a single caustic photon for a ray of light in the scene pointed at a specific object
+    // This can be called recursively by materials
     pub fn calculate_caustic(
         &self,
         ray: &Ray,
@@ -294,18 +307,19 @@ impl Scene {
         };
         if hit.get_object_index() != object_index {
             // Ray does not hit the caustic object first
-            if recurse_depth == 0 {
-                return None;
+            return if recurse_depth == 0 {
+                None
             } else {
-                return Some(Photon::new_caustic(
+                Some(Photon::new_caustic(
                     hit.pos(),
                     light_index,
                     color,
                     object_index,
-                ));
-            }
+                ))
+            };
         }
 
+        // Get the material of the object and find compute the caustics for that material
         self.materials[self.objects[object_index].get_material(hit)].compute_caustic_ray(
             *ray,
             hit,
@@ -384,7 +398,9 @@ impl Scene {
     }
 }
 
-// Wrapper necessary for polymorphic traits for primatives
+// Wrapper necessary for polymorphic traits for primitives
+// Necessary to convince the compiler a vector of Boxes of primitives implements
+//      traits necessary for BVH
 #[derive(Debug)]
 struct PrimitiveWrapper {
     primitive: Box<dyn Primitive + Sync + Send>,

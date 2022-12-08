@@ -25,6 +25,8 @@ impl Sphere {
 }
 
 impl Object for Sphere {
+    // Spheres do *not* fully support general transforms, and instead approximate them
+    // Use Quadratic curves for full transform support
     fn apply_transform(self: &mut Sphere, t: &Affine3A) {
         self.center = t.transform_point3(self.center);
     }

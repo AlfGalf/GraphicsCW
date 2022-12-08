@@ -37,18 +37,10 @@ impl Material for ReflectiveMaterial {
             let reflection_ray = Ray::new(*hit.pos() + reflection_dir * EPSILON, reflection_dir);
             let (col, _) = scene.calc_ray(reflection_ray, recurse_power, recurse_depth + 1);
 
-            col.scale(&recurse_power)
+            col.piecewise_mul(&recurse_power)
         } else {
             Color::new_black()
         }
-    }
-
-    fn update_mat_index(&mut self, i: usize) {
-        self.mat_index = i
-    }
-
-    fn get_mat_index(&self) -> usize {
-        self.mat_index
     }
 
     fn compute_photon(

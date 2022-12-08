@@ -5,7 +5,7 @@ use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use glam::{Mat3, Vec3};
 
-const EPSILON: f32 = 0.00001;
+const EPSILON: f32 = 1E-5;
 
 #[derive(Clone, Debug)]
 pub struct TrianglePrimitive {

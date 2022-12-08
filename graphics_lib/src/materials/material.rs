@@ -17,10 +17,6 @@ pub trait Material: Debug {
         recurse_power: Color,
     ) -> Color;
 
-    fn update_mat_index(&mut self, i: usize);
-
-    fn get_mat_index(&self) -> usize;
-
     // Finds a list of photons resulting from a photon hitting this material
     fn compute_photon(
         &self,

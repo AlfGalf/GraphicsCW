@@ -1,3 +1,4 @@
+use crate::constants::EPSILON;
 use crate::hit::Hit;
 use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
@@ -58,7 +59,8 @@ impl Primitive for SpherePrimitive {
 
         let discriminant: f32 = b * b - 4. * c;
 
-        if discriminant <= 0. {
+        // If discriminant sufficiently small, then hit either doesnt exist or is very close to edge
+        if discriminant <= EPSILON {
             Vec::new()
         } else {
             let sqrt = discriminant.sqrt();

@@ -13,6 +13,8 @@ pub struct Cube {
 }
 
 impl Cube {
+    // Cube always starts as cube centered at origin of side length 1
+    // Can be transformed to move and resize
     pub fn new(material: usize) -> Self {
         Self {
             material,
@@ -21,6 +23,8 @@ impl Cube {
         }
     }
 
+    // Defines the vertices of the triangles making up
+    //   a cube of side length 1 at the origin
     fn get_triangles(&self) -> Vec<(Vec3, Vec3, Vec3)> {
         let triangles: Vec<(Vec3, Vec3, Vec3)> = vec![
             (
@@ -89,6 +93,7 @@ impl Cube {
             .into_iter()
             .map(|(p1, p2, p3)| {
                 (
+                    // Transforms each triangle
                     self.transform.transform_point3(p1),
                     self.transform.transform_point3(p2),
                     self.transform.transform_point3(p3),
@@ -137,6 +142,7 @@ impl Object for Cube {
         hits
     }
 
+    // Finds a bounding box for the object
     fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
         self.get_triangles().into_iter().fold(
             (

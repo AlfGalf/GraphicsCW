@@ -22,7 +22,7 @@ impl DiffuseMaterial {
 impl Material for DiffuseMaterial {
     fn compute<'a>(&self, _: Ray, hit: &Hit, _: Color, scene: &Scene, _: usize, _: Color) -> Color {
         scene
-            .get_lights()
+            .get_lights() // For each light in the scene
             .iter()
             .enumerate()
             .fold(Color::new_black(), |c, (i, light)| {
@@ -30,18 +30,12 @@ impl Material for DiffuseMaterial {
 
                 let dir = light.get_direction(*hit.pos());
 
+                // this is the diffuse coefficient from the phong lighting model
                 let diffuse = hit.normal().dot(-dir).max(0.);
 
+                // Sum it with the intensity from other lights
                 c + intensity * diffuse
             })
-    }
-
-    fn update_mat_index(&mut self, i: usize) {
-        self.mat_index = i
-    }
-
-    fn get_mat_index(&self) -> usize {
-        self.mat_index
     }
 
     fn compute_photon(
