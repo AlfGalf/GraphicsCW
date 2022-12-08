@@ -9,3 +9,5 @@ To use:
 - Install Cargo for rust
 - Navigate to the `main` directory (`cd ./main`)
 - Run `cargo run --release`
+
+See dependencies in `./graphics_lib/Cargo.toml`
