@@ -19,7 +19,6 @@ use std::fmt::Debug;
 pub struct CompoundMaterial {
     color: Color,
     materials: Vec<(Box<dyn Material + Sync + Send>, f32)>,
-    mat_index: usize,
 }
 
 impl CompoundMaterial {
@@ -33,7 +32,6 @@ impl CompoundMaterial {
                 .into_iter()
                 .map(|(m, w)| (m, (w * scale)))
                 .collect(),
-            mat_index: 0,
         }
     }
 

@@ -13,15 +13,11 @@ use rand::Rng;
 #[derive(Debug, Clone)]
 pub struct TransparentMaterial {
     refractive_index: f32,
-    mat_index: usize,
 }
 
 impl<'a> TransparentMaterial {
     pub fn new(refractive_index: f32) -> Self {
-        TransparentMaterial {
-            refractive_index,
-            mat_index: 0,
-        }
+        TransparentMaterial { refractive_index }
     }
 
     // This function finds the exit point of a ray internal to a material

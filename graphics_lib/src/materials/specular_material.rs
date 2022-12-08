@@ -13,15 +13,11 @@ use std::fmt::Debug;
 #[derive(Debug, Clone)]
 pub struct SpecularMaterial {
     power: i32,
-    mat_index: usize,
 }
 
 impl SpecularMaterial {
     pub fn new(power: i32) -> SpecularMaterial {
-        SpecularMaterial {
-            power,
-            mat_index: 0,
-        }
+        SpecularMaterial { power }
     }
 }
 

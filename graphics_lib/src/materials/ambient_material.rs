@@ -8,13 +8,11 @@ use crate::scene::Scene;
 
 // This material adds the photon mapping global illuminations
 #[derive(Clone, Debug)]
-pub struct AmbientMaterial {
-    mat_index: usize,
-}
+pub struct AmbientMaterial {}
 
 impl AmbientMaterial {
     pub(crate) fn new() -> AmbientMaterial {
-        AmbientMaterial { mat_index: 0 }
+        AmbientMaterial {}
     }
 }
 

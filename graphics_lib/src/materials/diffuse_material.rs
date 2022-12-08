@@ -9,13 +9,11 @@ use crate::scene::Scene;
 // This material represents the diffuse lighting of a material
 //      Uses the Phong lighting model
 #[derive(Debug, Clone)]
-pub struct DiffuseMaterial {
-    mat_index: usize,
-}
+pub struct DiffuseMaterial {}
 
 impl DiffuseMaterial {
     pub fn new() -> DiffuseMaterial {
-        DiffuseMaterial { mat_index: 0 }
+        DiffuseMaterial {}
     }
 }
 

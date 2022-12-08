@@ -7,13 +7,11 @@ use crate::scene::Scene;
 
 // This material is for debugging purposes and visualises the normals of surfaces
 #[derive(Debug, Clone)]
-pub struct FalseColorMaterial {
-    mat_index: usize,
-}
+pub struct FalseColorMaterial {}
 
 impl FalseColorMaterial {
     pub fn new() -> Self {
-        FalseColorMaterial { mat_index: 0 }
+        FalseColorMaterial {}
     }
 }
 impl Material for FalseColorMaterial {

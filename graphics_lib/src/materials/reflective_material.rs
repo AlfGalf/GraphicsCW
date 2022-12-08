@@ -9,13 +9,11 @@ use glam::Vec3;
 
 // This material is a perfectly reflective material
 #[derive(Clone, Debug)]
-pub struct ReflectiveMaterial {
-    mat_index: usize,
-}
+pub struct ReflectiveMaterial {}
 
 impl ReflectiveMaterial {
     pub(crate) fn new() -> ReflectiveMaterial {
-        ReflectiveMaterial { mat_index: 0 }
+        ReflectiveMaterial {}
     }
 }
 

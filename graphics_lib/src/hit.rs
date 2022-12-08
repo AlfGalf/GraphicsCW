@@ -1,6 +1,4 @@
-use crate::color::Color;
 use glam::Vec3;
-use std::fs::create_dir;
 
 // Represents a hit between a ray and a primitive
 #[derive(Clone)]
