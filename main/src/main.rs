@@ -8,10 +8,13 @@ use graphics_lib::lights::point_light::PointLight;
 use graphics_lib::materials::compound_material::CompoundMaterial;
 use graphics_lib::materials::false_color_material::FalseColorMaterial;
 use graphics_lib::materials::material::Material;
+use graphics_lib::objects::cube::Cube;
 use graphics_lib::objects::object::Object;
 use graphics_lib::objects::plane::Plane;
 use graphics_lib::objects::poly_mesh::PolyMesh;
+use graphics_lib::objects::sphere::Sphere;
 use graphics_lib::scene::Scene;
+use std::f32::consts::PI;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Write};
@@ -21,13 +24,13 @@ fn main() {
         Box::new(CompoundMaterial::new_transparent_material_opacity(
             // 0 -> transparent grey
             1.2,
-            Color::new(0.9, 1.0, 0.9),
+            Color::new(0.8, 1.0, 0.8),
             0.02,
         )),
         Box::new(CompoundMaterial::new_reflective_material(
             // 1 -> reflective slight green
-            Color::new(0.4, 0.8, 0.4),
-            0.8,
+            Color::new(1.0, 1.0, 1.0),
+            0.9,
         )),
         Box::new(CompoundMaterial::new_reflective_material(
             // 2 -> Red shiny
@@ -122,7 +125,7 @@ fn main() {
     );
 
     let plane_right = Plane::new(
-        Vec3::new(6., 0., 0.),
+        Vec3::new(4., 0., 0.),
         Vec3::new(-1., 0., 0.),
         // FalseColorMaterial::new(),
         8,
@@ -173,8 +176,9 @@ fn main() {
 
     let light = PointLight::new(Vec3::new(0.1, 3.0, -10.0), Color::new(0.9, 0.4, 0.4));
     let light2 = PointLight::new(Vec3::new(-4.0, 3.0, -7.0), Color::new(0.4, 0.9, 0.4));
-    // let dir_light = DirectionalLight::new(Vec3::new(2.0, -4.0, 2.0), Color::new(0.9, 0.8, 0.85));
-    let main_light = PointLight::new(Vec3::new(2.0, 3.5, -3.0), Color::new(0.4, 0.4, 0.9));
+    let main_light = PointLight::new(Vec3::new(1.0, 3.5, -5.0), Color::new(0.9, 0.9, 0.9));
+
+    let sphere = Sphere::new(Vec3::new(0., 1., 0.), 1.2, 1);
 
     let scene = Scene::new(
         vec![
@@ -184,14 +188,15 @@ fn main() {
             Box::new(plane_top),
             Box::new(plane_bottom),
             Box::new(plane_front),
-            Box::new(teapot_shiny),
+            Box::new(sphere),
+            // Box::new(teapot_shiny),
             // Box::new(teapot_trans_green),
         ],
-        vec![Box::new(main_light), Box::new(light), Box::new(light2)],
+        vec![Box::new(main_light)],
         materials,
         Box::new(NormalCamera::new(
-            Vec3::new(3., 0., -20.),
-            Vec3::new(-0.10, 0., 1.0),
+            Vec3::new(1., 1., -20.),
+            Vec3::new(-0.05, 0., 1.0),
             Vec3::new(0., 1., 0.),
             1.7,
         )),

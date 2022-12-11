@@ -12,7 +12,7 @@ pub(crate) const DEFAULT_AMBIENT: f32 = 0.01;
 //  use -Infinity or +Infinity as this breaks the BVH
 pub(crate) const SCENE_BOUNDS: f32 = 1.0E10;
 // How many photons and caustic photons to fire
-pub(crate) const NUMBER_PHOTONS_PER_LIGHT: usize = 100_000;
+pub(crate) const NUMBER_PHOTONS_PER_LIGHT: usize = 300_000;
 pub(crate) const NUMBER_CAUSTICS_PER_LIGHT_PER_OBJ: usize = 100_000;
 // Radius to find photons in when estimating radiance
 pub(crate) const PHOTON_RAD: f32 = 0.8;
