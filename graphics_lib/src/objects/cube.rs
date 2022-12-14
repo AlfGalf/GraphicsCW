@@ -3,13 +3,13 @@ use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::triangle::TrianglePrimitive;
 use crate::scene::Scene;
-use glam::{Affine3A, Vec3};
+use glam::{DAffine3, DVec3};
 
 #[derive(Debug)]
 pub struct Cube {
     material: usize,
     csg_index: usize,
-    transform: Affine3A,
+    transform: DAffine3,
 }
 
 impl Cube {
@@ -18,74 +18,74 @@ impl Cube {
     pub fn new(material: usize) -> Self {
         Self {
             material,
-            transform: Affine3A::IDENTITY,
+            transform: DAffine3::IDENTITY,
             csg_index: 0,
         }
     }
 
     // Defines the vertices of the triangles making up
     //   a cube of side length 1 at the origin
-    fn get_triangles(&self) -> Vec<(Vec3, Vec3, Vec3)> {
-        let triangles: Vec<(Vec3, Vec3, Vec3)> = vec![
+    fn get_triangles(&self) -> Vec<(DVec3, DVec3, DVec3)> {
+        let triangles: Vec<(DVec3, DVec3, DVec3)> = vec![
             (
-                Vec3::new(-0.5, -0.5, -0.5),
-                Vec3::new(-0.5, 0.5, 0.5),
-                Vec3::new(-0.5, -0.5, 0.5),
+                DVec3::new(-0.5, -0.5, -0.5),
+                DVec3::new(-0.5, 0.5, 0.5),
+                DVec3::new(-0.5, -0.5, 0.5),
             ),
             (
-                Vec3::new(-0.5, -0.5, -0.5),
-                Vec3::new(-0.5, 0.5, -0.5),
-                Vec3::new(-0.5, 0.5, 0.5),
+                DVec3::new(-0.5, -0.5, -0.5),
+                DVec3::new(-0.5, 0.5, -0.5),
+                DVec3::new(-0.5, 0.5, 0.5),
             ), // -x side
             (
-                Vec3::new(0.5, -0.5, -0.5),
-                Vec3::new(0.5, -0.5, 0.5),
-                Vec3::new(0.5, 0.5, 0.5),
+                DVec3::new(0.5, -0.5, -0.5),
+                DVec3::new(0.5, -0.5, 0.5),
+                DVec3::new(0.5, 0.5, 0.5),
             ),
             (
-                Vec3::new(0.5, -0.5, -0.5),
-                Vec3::new(0.5, 0.5, 0.5),
-                Vec3::new(0.5, 0.5, -0.5),
+                DVec3::new(0.5, -0.5, -0.5),
+                DVec3::new(0.5, 0.5, 0.5),
+                DVec3::new(0.5, 0.5, -0.5),
             ), // +x side
             (
-                Vec3::new(-0.5, -0.5, -0.5),
-                Vec3::new(-0.5, -0.5, 0.5),
-                Vec3::new(0.5, -0.5, 0.5),
+                DVec3::new(-0.5, -0.5, -0.5),
+                DVec3::new(-0.5, -0.5, 0.5),
+                DVec3::new(0.5, -0.5, 0.5),
             ),
             (
-                Vec3::new(-0.5, -0.5, -0.5),
-                Vec3::new(0.5, -0.5, 0.5),
-                Vec3::new(0.5, -0.5, -0.5),
+                DVec3::new(-0.5, -0.5, -0.5),
+                DVec3::new(0.5, -0.5, 0.5),
+                DVec3::new(0.5, -0.5, -0.5),
             ), // -y side
             (
-                Vec3::new(-0.5, 0.5, -0.5),
-                Vec3::new(0.5, 0.5, 0.5),
-                Vec3::new(-0.5, 0.5, 0.5),
+                DVec3::new(-0.5, 0.5, -0.5),
+                DVec3::new(0.5, 0.5, 0.5),
+                DVec3::new(-0.5, 0.5, 0.5),
             ),
             (
-                Vec3::new(-0.5, 0.5, -0.5),
-                Vec3::new(0.5, 0.5, -0.5),
-                Vec3::new(0.5, 0.5, 0.5),
+                DVec3::new(-0.5, 0.5, -0.5),
+                DVec3::new(0.5, 0.5, -0.5),
+                DVec3::new(0.5, 0.5, 0.5),
             ), // +y side
             (
-                Vec3::new(-0.5, -0.5, -0.5),
-                Vec3::new(0.5, 0.5, -0.5),
-                Vec3::new(-0.5, 0.5, -0.5),
+                DVec3::new(-0.5, -0.5, -0.5),
+                DVec3::new(0.5, 0.5, -0.5),
+                DVec3::new(-0.5, 0.5, -0.5),
             ),
             (
-                Vec3::new(-0.5, -0.5, -0.5),
-                Vec3::new(0.5, -0.5, -0.5),
-                Vec3::new(0.5, 0.5, -0.5),
+                DVec3::new(-0.5, -0.5, -0.5),
+                DVec3::new(0.5, -0.5, -0.5),
+                DVec3::new(0.5, 0.5, -0.5),
             ), // -z side
             (
-                Vec3::new(-0.5, -0.5, 0.5),
-                Vec3::new(-0.5, 0.5, 0.5),
-                Vec3::new(0.5, 0.5, 0.5),
+                DVec3::new(-0.5, -0.5, 0.5),
+                DVec3::new(-0.5, 0.5, 0.5),
+                DVec3::new(0.5, 0.5, 0.5),
             ),
             (
-                Vec3::new(-0.5, -0.5, 0.5),
-                Vec3::new(0.5, 0.5, 0.5),
-                Vec3::new(0.5, -0.5, 0.5),
+                DVec3::new(-0.5, -0.5, 0.5),
+                DVec3::new(0.5, 0.5, 0.5),
+                DVec3::new(0.5, -0.5, 0.5),
             ), // +z side
         ];
 
@@ -104,8 +104,8 @@ impl Cube {
 }
 
 impl Object for Cube {
-    fn apply_transform(&mut self, t: &Affine3A) {
-        self.transform = self.transform * *t
+    fn apply_transform(&mut self, t: &DAffine3) {
+        self.transform = *t * self.transform
     }
 
     fn get_material(&self, _: &Hit) -> usize {
@@ -126,9 +126,9 @@ impl Object for Cube {
                     p2,
                     p3,
                     (p3 - p1).cross(p2 - p1).normalize(),
-                    Vec3::new(0., 0., 0.),
-                    Vec3::new(0., 0., 0.),
-                    Vec3::new(0., 0., 0.),
+                    DVec3::new(0., 0., 0.),
+                    DVec3::new(0., 0., 0.),
+                    DVec3::new(0., 0., 0.),
                     false,
                     obj_index,
                     self.csg_index,
@@ -143,11 +143,11 @@ impl Object for Cube {
     }
 
     // Finds a bounding box for the object
-    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+    fn get_caustic_bounds(&self) -> (DVec3, DVec3) {
         self.get_triangles().into_iter().fold(
             (
-                Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
-                Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),
+                DVec3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
+                DVec3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY),
             ),
             |(c_min, c_max), (p1, p2, p3)| {
                 (c_min.min(p1).min(p2).min(p3), c_max.max(p1).max(p2).max(p3))

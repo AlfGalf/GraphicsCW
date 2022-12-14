@@ -3,21 +3,21 @@ use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
-use glam::{Mat3, Vec3};
+use glam::{DMat3, DVec3, Vec3};
 
-const EPSILON: f32 = 1E-5;
+const EPSILON: f64 = 1E-5;
 
 #[derive(Clone, Debug)]
 pub struct TrianglePrimitive {
-    a: Vec3,
-    b: Vec3,
-    c: Vec3,
-    n: Vec3,
-    an: Vec3,
-    bn: Vec3,
-    cn: Vec3,
-    mat: Mat3,
-    d: f32,
+    a: DVec3,
+    b: DVec3,
+    c: DVec3,
+    n: DVec3,
+    an: DVec3,
+    bn: DVec3,
+    cn: DVec3,
+    mat: DMat3,
+    d: f64,
     smoothing: bool,
     node_index: usize,
     obj_index: usize,
@@ -26,13 +26,13 @@ pub struct TrianglePrimitive {
 
 impl TrianglePrimitive {
     pub fn new(
-        a: Vec3,
-        b: Vec3,
-        c: Vec3,
-        n: Vec3,
-        an: Vec3,
-        bn: Vec3,
-        cn: Vec3,
+        a: DVec3,
+        b: DVec3,
+        c: DVec3,
+        n: DVec3,
+        an: DVec3,
+        bn: DVec3,
+        cn: DVec3,
         smoothing: bool,
         obj_index: usize,
         csg_index: usize,
@@ -44,7 +44,7 @@ impl TrianglePrimitive {
             an,
             bn,
             cn,
-            mat: Mat3::from_cols(a, b, c).inverse(),
+            mat: DMat3::from_cols(a, b, c).inverse(),
             n,
             d: a.dot(n),
             smoothing,
@@ -68,8 +68,8 @@ impl BHShape for TrianglePrimitive {
 impl Bounded for TrianglePrimitive {
     fn aabb(&self) -> AABB {
         AABB::with_bounds(
-            self.a.min(self.b).min(self.c),
-            self.a.max(self.b).max(self.c),
+            self.a.min(self.b).min(self.c).as_vec3(),
+            self.a.max(self.b).max(self.c).as_vec3(),
         )
     }
 }

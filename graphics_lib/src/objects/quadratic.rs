@@ -3,20 +3,20 @@ use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::quadratic::QuadraticPrimitive;
 use crate::scene::Scene;
-use glam::{Affine3A, Mat4, Vec3};
+use glam::{DAffine3, DMat4, DVec3};
 
 #[derive(Debug)]
 pub struct Quadratic {
-    mat: Mat4,
+    mat: DMat4,
     material: usize,
     csg_index: usize,
 }
 
 impl Quadratic {
-    pub fn new(vals: [f32; 10], material: usize) -> Self {
+    pub fn new(vals: [f64; 10], material: usize) -> Self {
         Self {
             // Uses a Mat4 internally to make transforms easier
-            mat: Mat4::from_cols_array(&[
+            mat: DMat4::from_cols_array(&[
                 vals[0], vals[1], vals[2], vals[3], //
                 vals[1], vals[4], vals[5], vals[6], //
                 vals[2], vals[5], vals[7], vals[8], //
@@ -29,8 +29,8 @@ impl Quadratic {
 }
 
 impl Object for Quadratic {
-    fn apply_transform(&mut self, t: &Affine3A) {
-        self.mat = Mat4::from(*t).transpose() * self.mat * Mat4::from(*t)
+    fn apply_transform(&mut self, t: &DAffine3) {
+        self.mat = DMat4::from(*t).transpose() * self.mat * DMat4::from(*t)
     }
 
     fn get_material(&self, _: &Hit) -> usize {
@@ -55,10 +55,10 @@ impl Object for Quadratic {
 
     // Cannot easily bound a quadratic as may be unbounded
     // Bust be wrapped in an Intersection CSG to by used for caustics
-    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+    fn get_caustic_bounds(&self) -> (DVec3, DVec3) {
         (
-            Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),
-            Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
+            DVec3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY),
+            DVec3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
         )
     }
 

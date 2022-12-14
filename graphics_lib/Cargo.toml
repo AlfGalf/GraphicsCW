@@ -11,7 +11,7 @@ edition = "2021"
 rayon = "1.5"
 # Glam used for Vectors and other basic linear algebra types
 # https://crates.io/crates/glam
-glam = "0.21.3"
+glam = "0.22.0"
 # bvh used for Bounding volume hierachy
 # https://crates.io/crates/bvh
 bvh = "0.7.0"

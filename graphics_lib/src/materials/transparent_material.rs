@@ -7,16 +7,16 @@ use crate::materials::material::Material;
 use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
-use glam::Vec3;
+use glam::DVec3;
 use rand::Rng;
 
 #[derive(Debug, Clone)]
 pub struct TransparentMaterial {
-    refractive_index: f32,
+    refractive_index: f64,
 }
 
 impl<'a> TransparentMaterial {
-    pub fn new(refractive_index: f32) -> Self {
+    pub fn new(refractive_index: f64) -> Self {
         TransparentMaterial { refractive_index }
     }
 
@@ -41,11 +41,11 @@ impl<'a> TransparentMaterial {
     // This finds the ray direction and the Fresnel equations
     fn find_rays(
         &self,
-        normal: Vec3,
-        incidence: Vec3,
-        pos: Vec3,
+        normal: DVec3,
+        incidence: DVec3,
+        pos: DVec3,
         going_in: bool,
-    ) -> (Option<Ray>, f32, Ray, f32) {
+    ) -> (Option<Ray>, f64, Ray, f64) {
         let refr_index = if going_in {
             1. / self.refractive_index
         } else {
@@ -171,7 +171,7 @@ impl<'a> TransparentMaterial {
 
         // Generates random number for Monte Carlo method
         let mut rng = rand::thread_rng();
-        let i: f32 = rng.gen_range((0.)..1.);
+        let i: f64 = rng.gen_range((0.)..1.);
 
         // If in the refleciton part
         if i < refl_coeff {

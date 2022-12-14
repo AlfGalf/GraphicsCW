@@ -4,19 +4,19 @@ use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
-use glam::{Mat4, Vec3};
+use glam::{DMat4, DVec3, Vec3};
 use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct QuadraticPrimitive {
-    values: [f32; 10],
+    values: [f64; 10],
     csg_index: usize,
     object_index: usize,
     bh_index: usize,
 }
 
 impl QuadraticPrimitive {
-    pub fn new(mat: Mat4, csg_index: usize, object_index: usize) -> Self {
+    pub fn new(mat: DMat4, csg_index: usize, object_index: usize) -> Self {
         let mat_vals = mat.to_cols_array_2d();
         Self {
             values: [
@@ -125,7 +125,7 @@ impl Primitive for QuadraticPrimitive {
             vec![
                 Hit::new(
                     p0,
-                    Vec3::new(
+                    DVec3::new(
                         values[0] * p0.x + values[1] * p0.y + values[2] * p0.z + values[3],
                         values[1] * p0.x + values[4] * p0.y + values[5] * p0.z + values[6],
                         values[2] * p0.x + values[5] * p0.y + values[7] * p0.z + values[8],
@@ -138,7 +138,7 @@ impl Primitive for QuadraticPrimitive {
                 ),
                 Hit::new(
                     p1,
-                    Vec3::new(
+                    DVec3::new(
                         values[0] * p1.x + values[1] * p1.y + values[2] * p1.z + values[3],
                         values[1] * p1.x + values[4] * p1.y + values[5] * p1.z + values[6],
                         values[2] * p1.x + values[5] * p1.y + values[7] * p1.z + values[8],

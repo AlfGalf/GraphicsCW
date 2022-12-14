@@ -4,19 +4,19 @@ use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
-use glam::Vec3;
+use glam::{DVec3, Vec3};
 
 #[derive(Debug, Clone)]
 pub struct PlanePrimitive {
-    normal: Vec3,
-    d: f32,
+    normal: DVec3,
+    d: f64,
     node_index: usize,
     obj_index: usize,
     csg_index: usize,
 }
 
 impl PlanePrimitive {
-    pub fn new(point: Vec3, normal: Vec3, obj_index: usize, csg_index: usize) -> Self {
+    pub fn new(point: DVec3, normal: DVec3, obj_index: usize, csg_index: usize) -> Self {
         Self {
             normal,
             d: normal.dot(point),

@@ -3,18 +3,18 @@ use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::sphere::SpherePrimitive;
 use crate::scene::Scene;
-use glam::{Affine3A, Vec3};
+use glam::{DAffine3, DVec3};
 
 #[derive(Debug)]
 pub struct Sphere {
-    center: Vec3,
-    rad: f32,
+    center: DVec3,
+    rad: f64,
     material: usize,
     csg_index: usize,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, rad: f32, material: usize) -> Sphere {
+    pub fn new(center: DVec3, rad: f64, material: usize) -> Sphere {
         Sphere {
             center,
             rad,
@@ -27,7 +27,7 @@ impl Sphere {
 impl Object for Sphere {
     // Spheres do *not* fully support general transforms, and instead approximate them
     // Use Quadratic curves for full transform support
-    fn apply_transform(self: &mut Sphere, t: &Affine3A) {
+    fn apply_transform(self: &mut Sphere, t: &DAffine3) {
         self.center = t.transform_point3(self.center);
     }
 
@@ -52,10 +52,10 @@ impl Object for Sphere {
         hits
     }
 
-    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+    fn get_caustic_bounds(&self) -> (DVec3, DVec3) {
         (
-            self.center - Vec3::new(self.rad, self.rad, self.rad),
-            self.center + Vec3::new(self.rad, self.rad, self.rad),
+            self.center - DVec3::new(self.rad, self.rad, self.rad),
+            self.center + DVec3::new(self.rad, self.rad, self.rad),
         )
     }
 

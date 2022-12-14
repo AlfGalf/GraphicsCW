@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::constants::{CAUSTIC_RAD, PHOTON_RAD};
+use crate::constants::{CAUSTIC_RAD, CAUSTIC_SCALAR, PHOTON_RAD};
 use crate::hit::Hit;
 use crate::materials::material::Material;
 use crate::photon::{Photon, PhotonType};
@@ -59,7 +59,7 @@ impl Material for AmbientMaterial {
 
         // Divide the photon map light intensity by the square root of the number of
         //  photons, this softens the noise
-        photon_map_col * (1. / (photons.len() as f32).sqrt()) + caustic_part
+        photon_map_col * (1. / (photons.len() as f64).sqrt()) + caustic_part * CAUSTIC_SCALAR
     }
 
     fn compute_photon(

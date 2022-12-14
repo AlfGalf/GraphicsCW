@@ -1,13 +1,13 @@
 use crate::hit::Hit;
 use crate::primitives::primitive::Primitive;
 use crate::scene::Scene;
-use glam::{Affine3A, Vec3};
+use glam::{DAffine3, DVec3};
 use std::fmt::Debug;
 
 // This represents an object in the scene
 pub trait Object: Debug {
     // Transforms the object
-    fn apply_transform(&mut self, t: &Affine3A);
+    fn apply_transform(&mut self, t: &DAffine3);
 
     // Get the index of the objects material from the scene
     fn get_material(&self, hit: &Hit) -> usize;
@@ -24,7 +24,7 @@ pub trait Object: Debug {
     fn filter_hits(&self, hits: Vec<Hit>, index: usize) -> Vec<Hit>;
 
     // Gets a bounding box for the object to fire rays within
-    fn get_caustic_bounds(&self) -> (Vec3, Vec3);
+    fn get_caustic_bounds(&self) -> (DVec3, DVec3);
 
     // Works out if an object needs caustics or not
     fn needs_caustic(&self, scene: &Scene) -> bool;

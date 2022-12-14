@@ -1,5 +1,5 @@
 use crate::color::Color;
-use glam::Vec3;
+use glam::DVec3;
 use kd_tree::KdPoint;
 
 #[derive(Debug, Clone, Copy)]
@@ -12,7 +12,7 @@ pub enum PhotonType {
 
 #[derive(Debug, Clone)]
 pub struct Photon {
-    pos: [f32; 3],
+    pos: [f64; 3],
     p_type: PhotonType,
     light_index: usize,
     obj: usize,
@@ -25,7 +25,7 @@ impl Default for Photon {
 }
 
 impl Photon {
-    pub fn new_shadow(pos: Vec3, light_index: usize, obj: usize) -> Self {
+    pub fn new_shadow(pos: DVec3, light_index: usize, obj: usize) -> Self {
         Self {
             pos: pos.to_array(),
             p_type: PhotonType::Shadow,
@@ -34,7 +34,7 @@ impl Photon {
         }
     }
 
-    pub fn new_direct(pos: Vec3, light_index: usize, obj: usize) -> Self {
+    pub fn new_direct(pos: DVec3, light_index: usize, obj: usize) -> Self {
         Self {
             pos: pos.to_array(),
             p_type: PhotonType::Direct,
@@ -43,7 +43,7 @@ impl Photon {
         }
     }
 
-    pub fn new_indirect(pos: Vec3, light_index: usize, color: Color, obj: usize) -> Self {
+    pub fn new_indirect(pos: DVec3, light_index: usize, color: Color, obj: usize) -> Self {
         Self {
             pos: pos.to_array(),
             p_type: PhotonType::Indirect(color),
@@ -52,7 +52,7 @@ impl Photon {
         }
     }
 
-    pub fn new_caustic(pos: &Vec3, light_index: usize, color: Color, obj: usize) -> Self {
+    pub fn new_caustic(pos: &DVec3, light_index: usize, color: Color, obj: usize) -> Self {
         Self {
             pos: pos.to_array(),
             p_type: PhotonType::Caustic(color),
@@ -77,8 +77,8 @@ impl Photon {
         self.p_type
     }
 
-    pub fn get_pos(&self) -> Vec3 {
-        Vec3::from_array(self.pos)
+    pub fn get_pos(&self) -> DVec3 {
+        DVec3::from_array(self.pos)
     }
 
     pub fn get_obj(&self) -> usize {
@@ -87,7 +87,7 @@ impl Photon {
 }
 
 impl KdPoint for Photon {
-    type Scalar = f32;
+    type Scalar = f64;
     type Dim = typenum::U3;
 
     fn at(&self, i: usize) -> Self::Scalar {

@@ -2,7 +2,7 @@ use crate::hit::Hit;
 use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::scene::Scene;
-use glam::{Affine3A, Vec3};
+use glam::{DAffine3, DVec3};
 use std::fmt::Debug;
 
 #[derive(Debug)]
@@ -37,7 +37,7 @@ impl CSG {
 
 impl Object for CSG {
     // Apply transform to each child
-    fn apply_transform(&mut self, t: &Affine3A) {
+    fn apply_transform(&mut self, t: &DAffine3) {
         self.left.apply_transform(t);
         self.right.apply_transform(t);
     }
@@ -185,7 +185,7 @@ impl Object for CSG {
     }
 
     // Computes a bounding box for a CSG
-    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+    fn get_caustic_bounds(&self) -> (DVec3, DVec3) {
         let left_bound = self.left.get_caustic_bounds();
         let right_bound = self.right.get_caustic_bounds();
         match self.csg_type {

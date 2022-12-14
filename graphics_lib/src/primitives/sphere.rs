@@ -4,19 +4,19 @@ use crate::primitives::primitive::Primitive;
 use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
-use glam::Vec3;
+use glam::DVec3;
 
 #[derive(Clone, Debug)]
 pub struct SpherePrimitive {
-    center: Vec3,
-    rad: f32,
+    center: DVec3,
+    rad: f64,
     node_index: usize,
     obj_index: usize,
     csg_index: usize,
 }
 
 impl SpherePrimitive {
-    pub(crate) fn new(center: Vec3, rad: f32, obj_index: usize, csg_index: usize) -> Self {
+    pub(crate) fn new(center: DVec3, rad: f64, obj_index: usize, csg_index: usize) -> Self {
         Self {
             center,
             rad,
@@ -38,8 +38,11 @@ impl BHShape for SpherePrimitive {
 
 impl Bounded for SpherePrimitive {
     fn aabb(&self) -> AABB {
-        let half = Vec3::new(self.rad, self.rad, self.rad);
-        AABB::with_bounds(self.center - half, self.center + half)
+        let half = DVec3::new(self.rad, self.rad, self.rad);
+        AABB::with_bounds(
+            (self.center - half).as_vec3(),
+            (self.center + half).as_vec3(),
+        )
     }
 }
 
@@ -53,11 +56,11 @@ impl Primitive for SpherePrimitive {
     }
 
     fn intersection(&self, ray: &Ray) -> Vec<Hit> {
-        let relative_position: Vec3 = ray.position() - self.center;
+        let relative_position: DVec3 = ray.position() - self.center;
         let b = 2. * ray.direction().dot(relative_position);
         let c = relative_position.dot(relative_position) - self.rad * self.rad;
 
-        let discriminant: f32 = b * b - 4. * c;
+        let discriminant: f64 = b * b - 4. * c;
 
         // If discriminant sufficiently small, then hit either doesnt exist or is very close to edge
         if discriminant <= EPSILON {

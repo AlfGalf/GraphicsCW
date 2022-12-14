@@ -2,10 +2,10 @@ use crate::color::Color;
 
 #[derive(Clone, Debug)]
 pub(crate) struct Pixel {
-    pub red: f32,
-    pub green: f32,
-    pub blue: f32,
-    pub depth: f32,
+    pub red: f64,
+    pub green: f64,
+    pub blue: f64,
+    pub depth: f64,
 }
 
 // Represents a pixel in a scene
@@ -19,7 +19,7 @@ impl Pixel {
         }
     }
 
-    pub(crate) fn from_color(color: Color, d: f32) -> Self {
+    pub(crate) fn from_color(color: Color, d: f64) -> Self {
         Pixel {
             red: color.red(),
             green: color.green(),
@@ -47,7 +47,7 @@ impl FrameBuffer {
     }
 
     // Adds color for a pixel
-    pub fn plot_pixel(&mut self, x: usize, y: usize, red: f32, green: f32, blue: f32) {
+    pub fn plot_pixel(&mut self, x: usize, y: usize, red: f64, green: f64, blue: f64) {
         let x = x.max(0).min(self.width - 1);
         let y = y.max(0).min(self.height - 1);
         self.frame_buffer[y * self.width + x].red = red;
@@ -56,14 +56,14 @@ impl FrameBuffer {
     }
 
     // Adds depth imformation for a pixel
-    pub fn plot_depth(&mut self, x: usize, y: usize, depth: f32) {
+    pub fn plot_depth(&mut self, x: usize, y: usize, depth: f64) {
         let x = x.max(0).min(self.width - 1);
         let y = y.max(0).min(self.height - 1);
         self.frame_buffer[y * self.width + x].depth = depth;
     }
 
     // Outputs a a stream of bytes that makeup a PPM file for image
-    pub fn to_rgb_file(&self, cap: f32) -> Vec<u8> {
+    pub fn to_rgb_file(&self, cap: f64) -> Vec<u8> {
         let mut output: Vec<u8> = Vec::new();
 
         // Square roots every pixel in the image and caps the brightness
@@ -83,10 +83,10 @@ impl FrameBuffer {
             .collect();
 
         // Finds maximum and minimum values to scale the image by
-        let max_val = out_pixels.iter().fold(f32::MIN, |prev: f32, pixel| {
+        let max_val = out_pixels.iter().fold(f64::MIN, |prev: f64, pixel| {
             prev.max(pixel.red).max(pixel.green).max(pixel.blue)
         });
-        let min_val = out_pixels.iter().fold(f32::MAX, |prev: f32, pixel| {
+        let min_val = out_pixels.iter().fold(f64::MAX, |prev: f64, pixel| {
             prev.min(pixel.red).min(pixel.green).min(pixel.blue)
         });
 
@@ -119,11 +119,11 @@ impl FrameBuffer {
         let max_val = self
             .frame_buffer
             .iter()
-            .fold(f32::MIN, |prev: f32, pixel| prev.max(pixel.depth));
+            .fold(f64::MIN, |prev: f64, pixel| prev.max(pixel.depth));
         let min_val = self
             .frame_buffer
             .iter()
-            .fold(f32::MAX, |prev: f32, pixel| prev.min(pixel.depth));
+            .fold(f64::MAX, |prev: f64, pixel| prev.min(pixel.depth));
 
         let diff = if max_val - min_val == 0. {
             1.

@@ -3,19 +3,19 @@ use crate::objects::object::Object;
 use crate::primitives::plane::PlanePrimitive;
 use crate::primitives::primitive::Primitive;
 use crate::scene::Scene;
-use glam::{Affine3A, Vec3};
+use glam::{DAffine3, DVec3};
 use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct Plane {
-    point: Vec3,
-    normal: Vec3,
+    point: DVec3,
+    normal: DVec3,
     material: usize,
     csg_index: usize,
 }
 
 impl Plane {
-    pub fn new(point: Vec3, normal: Vec3, material: usize) -> Plane {
+    pub fn new(point: DVec3, normal: DVec3, material: usize) -> Plane {
         Plane {
             point,
             normal: normal.normalize(),
@@ -26,7 +26,7 @@ impl Plane {
 }
 
 impl Object for Plane {
-    fn apply_transform(&mut self, t: &Affine3A) {
+    fn apply_transform(&mut self, t: &DAffine3) {
         self.point = t.transform_point3(self.point);
         self.normal = t.transform_vector3(self.normal).normalize();
     }
@@ -55,10 +55,10 @@ impl Object for Plane {
     // Cannot find bounds for a plane as it is infinite
     // If a plane is wanted for part of a caustic object, it vcan be wrapped in a intersection CSG
     // with a finite object
-    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+    fn get_caustic_bounds(&self) -> (DVec3, DVec3) {
         (
-            Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),
-            Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
+            DVec3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY),
+            DVec3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
         )
     }
 

@@ -7,11 +7,13 @@ use crate::scene::Scene;
 
 // This material is for debugging purposes and visualises the normals of surfaces
 #[derive(Debug, Clone)]
-pub struct FalseColorMaterial {}
+pub struct FalseColorMaterial {
+    scale: f64,
+}
 
 impl FalseColorMaterial {
-    pub fn new() -> Self {
-        FalseColorMaterial {}
+    pub fn new(scale: f64) -> Self {
+        FalseColorMaterial { scale }
     }
 }
 impl Material for FalseColorMaterial {
@@ -20,7 +22,7 @@ impl Material for FalseColorMaterial {
             (hit.normal().x + 1.0) * 0.5,
             (hit.normal().y + 1.0) * 0.5,
             (hit.normal().z + 1.0) * 0.5,
-        ) * 0.2
+        ) * self.scale
     }
 
     fn compute_photon(

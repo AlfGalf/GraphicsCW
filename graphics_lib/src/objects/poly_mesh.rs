@@ -3,7 +3,7 @@ use crate::objects::object::Object;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::triangle::TrianglePrimitive;
 use crate::scene::Scene;
-use glam::{Affine3A, Vec3};
+use glam::{DAffine3, DVec3};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -13,20 +13,20 @@ pub struct Triangle {
     an: usize,
     bn: usize,
     cn: usize,
-    pub n: Vec3,
+    pub n: DVec3,
 }
 
 #[derive(Debug)]
 struct Vertex {
     // indices of surrounding triangles
     pub(crate) triangles: Vec<usize>,
-    p: Vec3,
+    p: DVec3,
     // Normal may be calculated for smoothing
-    normal: Option<Vec3>,
+    normal: Option<DVec3>,
 }
 
 impl Vertex {
-    pub fn apply_transform(&mut self, tr: &Affine3A) {
+    pub fn apply_transform(&mut self, tr: &DAffine3) {
         self.p = tr.transform_point3(self.p)
     }
 
@@ -36,8 +36,8 @@ impl Vertex {
             let normal_sum = self
                 .triangles
                 .iter()
-                .fold(Vec3::ZERO, |v, i| v + tr.get(*i).unwrap().n);
-            normal_sum / (self.triangles.len() as f32)
+                .fold(DVec3::ZERO, |v, i| v + tr.get(*i).unwrap().n);
+            normal_sum / (self.triangles.len() as f64)
         });
     }
 }
@@ -81,19 +81,20 @@ impl PolyMesh {
         file: BufReader<File>,
         material: usize,
         smooth: bool,
-    ) -> Result<PolyMesh, &'static str> {
+        ord_rev: bool,
+    ) -> Result<PolyMesh, String> {
         let mut lines = file.lines();
 
         if let Some(first) = lines.next() {
             if let Ok(str) = first {
                 if str != "kcply" {
-                    return Err("Wrong file format.");
+                    return Err("Wrong file format.".to_string());
                 }
             } else {
-                return Err("Failed to read line.");
+                return Err("Failed to read line.".to_string());
             }
         } else {
-            return Err("File empty.");
+            return Err("File empty.".to_string());
         }
 
         let num_vertices = {
@@ -103,7 +104,7 @@ impl PolyMesh {
                 .map_err(|_| "Failed to read line.")?;
 
             if !vertices_line.starts_with("element vertex") {
-                return Err("Vertex line malformed (wrong start).");
+                return Err("Vertex line malformed (wrong start).".to_string());
             }
 
             let vertex_str = vertices_line
@@ -123,7 +124,7 @@ impl PolyMesh {
                 .map_err(|_| "Failed to read line.")?;
 
             if !faces_line.starts_with("element face ") {
-                return Err("Faces line malformed (wrong start).");
+                return Err("Faces line malformed (wrong start).".to_string());
             }
 
             let faces_str = faces_line
@@ -138,7 +139,7 @@ impl PolyMesh {
 
         let mut vertices: Vec<Vertex> = Vec::with_capacity(num_vertices as usize);
 
-        for _ in 0..num_vertices {
+        for i in 0..num_vertices {
             let line = lines
                 .next()
                 .ok_or("Vertex line missing")?
@@ -146,22 +147,22 @@ impl PolyMesh {
 
             let mut split_line = line.split(' ');
             vertices.push(Vertex {
-                p: Vec3::new(
+                p: DVec3::new(
                     split_line
                         .next()
                         .ok_or("Missing vertex (1)")?
                         .parse()
-                        .map_err(|_| "Malformed coordinate")?,
+                        .map_err(|e: _| format!("Malformed coordinate {}.1", i))?,
                     split_line
                         .next()
                         .ok_or("Missing vertex (2)")?
                         .parse()
-                        .map_err(|_| "Malformed coordinate")?,
+                        .map_err(|e: _| format!("Malformed coordinate {}.2", i))?,
                     split_line
                         .next()
                         .ok_or("Missing vertex (3)")?
                         .parse()
-                        .map_err(|_| "Malformed coordinate")?,
+                        .map_err(|e: _| format!("Malformed coordinate {}.3", i))?,
                 ),
                 triangles: vec![],
                 normal: None,
@@ -184,13 +185,10 @@ impl PolyMesh {
                     .next()
                     .ok_or("Missing vertex (0)")?
                     .parse::<usize>()
-                    .map_err(|e| {
-                        println!("{:?} {}", e, line);
-                        "Malformed coordinate"
-                    })?
+                    .map_err(|_| "Malformed coordinate")?
                     != 3
                 {
-                    return Err("Face does not start with 3.");
+                    return Err("Face does not start with 3.".to_string());
                 }
 
                 let an: usize = split_line
@@ -208,6 +206,8 @@ impl PolyMesh {
                     .ok_or("Missing face (3)")?
                     .parse::<usize>()
                     .map_err(|_| "Malformed vertex index")?;
+
+                let (bn, cn) = if ord_rev { (cn, bn) } else { (bn, cn) };
 
                 vertices.get_mut(an).unwrap().triangles.push(i);
                 vertices.get_mut(bn).unwrap().triangles.push(i);
@@ -235,7 +235,7 @@ impl PolyMesh {
 }
 
 impl Object for PolyMesh {
-    fn apply_transform(self: &mut PolyMesh, tr: &Affine3A) {
+    fn apply_transform(self: &mut PolyMesh, tr: &DAffine3) {
         // After transforming normals must be recomputed
         for v in self.vertices.iter_mut() {
             v.apply_transform(tr);
@@ -284,12 +284,12 @@ impl Object for PolyMesh {
         hits
     }
 
-    fn get_caustic_bounds(&self) -> (Vec3, Vec3) {
+    fn get_caustic_bounds(&self) -> (DVec3, DVec3) {
         // Find the upper and lower bounds of the vertices of the triangles
         self.triangles.iter().fold(
             (
-                Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY),
-                Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY),
+                DVec3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
+                DVec3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY),
             ),
             |(c_min, c_max), t| {
                 (

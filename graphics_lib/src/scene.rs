@@ -15,10 +15,11 @@ use crate::ray::Ray;
 use bvh::aabb::{Bounded, AABB};
 use bvh::bounding_hierarchy::BHShape;
 use bvh::bvh::BVH;
-use glam::Vec3;
+use glam::DVec3;
 use kd_tree::KdTree;
 use rayon::prelude::*;
 use std::fmt::Debug;
+use std::sync::Mutex;
 
 // Scene object
 #[derive(Debug)]
@@ -101,7 +102,7 @@ impl Scene {
         ray: Ray,
         reflection_power: Color,
         reflection_depth: usize,
-    ) -> (Color, f32) {
+    ) -> (Color, f64) {
         let intersections = self
             .intersection(ray)
             .filter(|s| s.get_dir() && s.get_distance() > 0.)
@@ -129,6 +130,8 @@ impl Scene {
     pub fn render(&self, width: usize, height: usize) -> FrameBuffer {
         let mut fb = FrameBuffer::new(width, height);
 
+        let mut done_count: Mutex<usize> = Mutex::new(0);
+
         // Builds a Vector of pixels in parallel
         let pixels: Vec<(usize, usize, Pixel)> = (0..height)
             .collect::<Vec<usize>>()
@@ -136,11 +139,11 @@ impl Scene {
             // https://crates.io/crates/rayon
             .map(move |y| {
                 // println!("line {} done", *y);
-                (0..width)
+                let res = (0..width)
                     .map(|x| {
                         let rays = self.camera.rays(
-                            (2. * (x as f32) - width as f32) / width as f32,
-                            (2. * -(*y as f32) + height as f32) / width as f32,
+                            (2. * (x as f64) - width as f64) / width as f64,
+                            (2. * -(*y as f64) + height as f64) / width as f64,
                         );
 
                         // For each ray the camera gives calculate, then average the result
@@ -158,12 +161,16 @@ impl Scene {
                             x,
                             *y,
                             Pixel::from_color(
-                                col_acc * (1. / rays.len() as f32),
-                                depth_acc / rays.len() as f32,
+                                col_acc * (1. / rays.len() as f64),
+                                depth_acc / rays.len() as f64,
                             ),
                         )
                     })
-                    .collect::<Vec<(usize, usize, Pixel)>>()
+                    .collect::<Vec<(usize, usize, Pixel)>>();
+                let mut data = done_count.lock().unwrap();
+                *data += 1;
+                println!("{}%", *data as f32 * 100. / height as f32);
+                res
             })
             .flatten()
             .collect();
@@ -299,35 +306,39 @@ impl Scene {
     ) -> Option<Photon> {
         let intersections: Vec<Hit> = self
             .intersection(*ray)
-            .filter(|p| p.get_distance() > EPSILON && p.get_dir())
+            .filter(|h| h.get_distance() > EPSILON && h.get_dir())
             .collect();
+
         let Some(hit) = intersections.first() else {
             return None;
             // Ray doesn't hit anything
         };
+
         if hit.get_object_index() != object_index {
             // Ray does not hit the caustic object first
-            return if recurse_depth == 0 {
+            if recurse_depth == 0 {
+                // If this is the first recurse do nothing
                 None
             } else {
+                // Otherwise add a caustic there and finish
                 Some(Photon::new_caustic(
                     hit.pos(),
                     light_index,
                     color,
                     object_index,
                 ))
-            };
+            }
+        } else {
+            // Get the material of the object and find compute the caustics for that material
+            self.materials[self.objects[object_index].get_material(hit)].compute_caustic_ray(
+                *ray,
+                hit,
+                self,
+                recurse_depth + 1,
+                light_index,
+                color,
+            )
         }
-
-        // Get the material of the object and find compute the caustics for that material
-        self.materials[self.objects[object_index].get_material(hit)].compute_caustic_ray(
-            *ray,
-            hit,
-            self,
-            recurse_depth + 1,
-            light_index,
-            color,
-        )
     }
 
     fn caustic_map(&self) -> KdTree<Photon> {
@@ -369,7 +380,7 @@ impl Scene {
     }
 
     // Finds all the photons within a radius from the photon map
-    pub fn get_photons(&self, pos: Vec3, rad: f32) -> Vec<Photon> {
+    pub fn get_photons(&self, pos: DVec3, rad: f64) -> Vec<Photon> {
         if self.photon_map.is_empty() {
             vec![]
         } else {
@@ -381,7 +392,7 @@ impl Scene {
         }
     }
     // Finds all the caustics within a radius
-    pub fn get_caustics(&self, pos: Vec3, rad: f32) -> Vec<Photon> {
+    pub fn get_caustics(&self, pos: DVec3, rad: f64) -> Vec<Photon> {
         if self.caustic_map.is_empty() {
             vec![]
         } else {

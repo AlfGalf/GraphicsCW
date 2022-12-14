@@ -5,7 +5,7 @@ use crate::materials::material::Material;
 use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
-use glam::Vec3;
+use glam::DVec3;
 
 // This material is a perfectly reflective material
 #[derive(Clone, Debug)]
@@ -28,7 +28,7 @@ impl Material for ReflectiveMaterial {
         recurse_power: Color,
     ) -> Color {
         if recurse_depth < MAX_RECURSE_DEPTH && recurse_power.min_val() > MIN_RECURSE_COEFFICIENT {
-            let reflection_dir: Vec3 = view_ray.direction()
+            let reflection_dir: DVec3 = view_ray.direction()
                 - 2. * (view_ray.direction().dot(*hit.normal())) * *hit.normal();
             let reflection_dir = reflection_dir.normalize();
 
@@ -50,7 +50,7 @@ impl Material for ReflectiveMaterial {
         recurse_power: Color,
         light_index: usize,
     ) -> Vec<Photon> {
-        let reflection_dir: Vec3 =
+        let reflection_dir: DVec3 =
             view_ray.direction() - 2. * (view_ray.direction().dot(*hit.normal())) * *hit.normal();
         let reflection_dir = reflection_dir.normalize();
         scene.calculate_photon_ray(

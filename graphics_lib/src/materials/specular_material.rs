@@ -5,7 +5,7 @@ use crate::materials::material::Material;
 use crate::photon::Photon;
 use crate::ray::Ray;
 use crate::scene::Scene;
-use glam::Vec3;
+use glam::DVec3;
 use std::fmt::Debug;
 
 // This material gives specular highlights
@@ -32,7 +32,7 @@ impl Material for SpecularMaterial {
         _: Color,
     ) -> Color {
         // finds the reflection direction of the ray viewing this point
-        let reflection_dir: Vec3 =
+        let reflection_dir: DVec3 =
             view_ray.direction() - 2. * (view_ray.direction().dot(*hit.normal())) * *hit.normal();
 
         let reflection_dir = reflection_dir.normalize();
@@ -64,7 +64,7 @@ impl Material for SpecularMaterial {
         light_index: usize,
     ) -> Vec<Photon> {
         // Photon generation in the opposite direction with a little bit of randomness
-        let reflection_dir: Vec3 =
+        let reflection_dir: DVec3 =
             view_ray.direction() - 2. * (view_ray.direction().dot(*hit.normal())) * *hit.normal();
 
         let reflection_dir = reflection_dir + 0.1 * fibonacci_spiral_random();

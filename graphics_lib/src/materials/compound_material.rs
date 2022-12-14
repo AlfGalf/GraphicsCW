@@ -18,11 +18,11 @@ use std::fmt::Debug;
 #[derive(Debug)]
 pub struct CompoundMaterial {
     color: Color,
-    materials: Vec<(Box<dyn Material + Sync + Send>, f32)>,
+    materials: Vec<(Box<dyn Material + Sync + Send>, f64)>,
 }
 
 impl CompoundMaterial {
-    pub fn new(materials: Vec<(Box<dyn Material + Sync + Send>, f32)>, color: Color) -> Self {
+    pub fn new(materials: Vec<(Box<dyn Material + Sync + Send>, f64)>, color: Color) -> Self {
         // Scales the weights to they add to 1
         let scale = 1. / materials.iter().fold(0., |ct, (_, weight)| ct + weight);
 
@@ -36,7 +36,7 @@ impl CompoundMaterial {
     }
 
     // Helper constructor to make a sensible matte material
-    pub fn new_matte_material(col: Color, specular: f32) -> CompoundMaterial {
+    pub fn new_matte_material(col: Color, specular: f64) -> CompoundMaterial {
         assert!(1. >= specular);
         assert!(0. <= specular);
         CompoundMaterial::new(
@@ -56,7 +56,7 @@ impl CompoundMaterial {
     }
 
     // Helper constructor to make a sensible reflective material
-    pub fn new_reflective_material(col: Color, reflectivity: f32) -> CompoundMaterial {
+    pub fn new_reflective_material(col: Color, reflectivity: f64) -> CompoundMaterial {
         assert!(1. >= reflectivity);
         assert!(0. <= reflectivity);
         CompoundMaterial::new(
@@ -75,7 +75,7 @@ impl CompoundMaterial {
     }
 
     // Helper constructor to make a sensible transparent material
-    pub fn new_transparent_material(refractive_index: f32) -> CompoundMaterial {
+    pub fn new_transparent_material(refractive_index: f64) -> CompoundMaterial {
         CompoundMaterial::new(
             vec![
                 (
@@ -97,9 +97,9 @@ impl CompoundMaterial {
     // Helper constructor to make a transparent material with a bit of matte
     //  material also
     pub fn new_transparent_material_opacity(
-        refractive_index: f32,
+        refractive_index: f64,
         color: Color,
-        opacity: f32,
+        opacity: f64,
     ) -> CompoundMaterial {
         CompoundMaterial::new(
             vec![
@@ -159,7 +159,7 @@ impl Material for CompoundMaterial {
         light_index: usize,
     ) -> Vec<Photon> {
         let mut rng = rand::thread_rng();
-        let mut i: f32 = rng.gen_range((0.)..1.);
+        let mut i: f64 = rng.gen_range((0.)..1.);
 
         // Randomly chooses a child material to send the photon from
         // This is the Monte Carlo implementation

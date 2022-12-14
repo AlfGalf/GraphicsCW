@@ -1,43 +1,43 @@
-use glam::Vec3;
+use glam::DVec3;
 use std::iter::Sum;
 use std::ops::{Add, Mul};
 
 // Helper struct to represent any color values in the project
-// Wrapper round the Vec3 from glam
+// Wrapper round the DVec3 from glam
 // Allows for the color arithmetic to be altered
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
-    color: Vec3,
+    color: DVec3,
 }
 
 impl Color {
-    pub fn new(red: f32, green: f32, blue: f32) -> Self {
+    pub fn new(red: f64, green: f64, blue: f64) -> Self {
         Self {
-            color: Vec3::new(red, green, blue),
+            color: DVec3::new(red, green, blue),
         }
     }
 
-    pub fn new_grey(c: f32) -> Self {
+    pub fn new_grey(c: f64) -> Self {
         Self {
-            color: Vec3::new(c, c, c),
+            color: DVec3::new(c, c, c),
         }
     }
 
     pub fn new_black() -> Self {
-        Self { color: Vec3::ZERO }
+        Self { color: DVec3::ZERO }
     }
 
-    pub(crate) fn magnitude(&self) -> f32 {
+    pub(crate) fn magnitude(&self) -> f64 {
         (self.color.x + self.color.y + self.color.z) / 3.
     }
 
-    pub(crate) fn red(&self) -> f32 {
+    pub(crate) fn red(&self) -> f64 {
         self.color.x
     }
-    pub(crate) fn green(&self) -> f32 {
+    pub(crate) fn green(&self) -> f64 {
         self.color.y
     }
-    pub(crate) fn blue(&self) -> f32 {
+    pub(crate) fn blue(&self) -> f64 {
         self.color.z
     }
 
@@ -53,11 +53,11 @@ impl Color {
         self.piecewise_mul(c) * (1. / c.magnitude())
     }
 
-    pub(crate) fn min_val(&self) -> f32 {
+    pub(crate) fn min_val(&self) -> f64 {
         self.color.min_element()
     }
 
-    pub(crate) fn max_val(&self) -> f32 {
+    pub(crate) fn max_val(&self) -> f64 {
         self.color.max_element()
     }
 }
@@ -73,10 +73,10 @@ impl Add<Color> for Color {
     }
 }
 
-impl Mul<f32> for Color {
+impl Mul<f64> for Color {
     type Output = Color;
 
-    fn mul(self, rhs: f32) -> Self::Output {
+    fn mul(self, rhs: f64) -> Self::Output {
         Color {
             color: self.color * rhs,
         }
