@@ -90,18 +90,22 @@ fn main() {
         .unwrap();
 
     let mut castle = PolyMesh::from_file(
-        BufReader::new(File::open("../castle.kcply").unwrap()),
+        BufReader::new(File::open("/Users/alfie/Downloads/sandal.kcply").unwrap()),
         4,
         false,
     )
     .unwrap();
 
-    castle.apply_transform(&Affine3A::from_cols_array(&[
-        0.03, 0.0, 0.0, //1
-        0.0, 0.0, 0.03, //2
-        0.0, 0.03, 0.0, // 3
-        -3.0, -2.0, -3.0, //
-    ]));
+    castle.apply_transform(
+        &(Affine3A::from_rotation_x(-0.3)
+            * Affine3A::from_cols_array(&[
+                0.3, 0.0, 0.0, //1
+                0.0, 0.0, 0.3, //2
+                0.0, 0.3, 0.0, // 3
+                0.0, 1.0, -5.0, // 3
+                      // -3.0, -2.0, -3.0, //
+            ])),
+    );
 
     let plane_bottom = Plane::new(
         Vec3::new(0., -2., 0.),
@@ -189,8 +193,8 @@ fn main() {
             Box::new(plane_bottom),
             Box::new(plane_front),
             Box::new(sphere),
-            // Box::new(teapot_shiny),
-            // Box::new(teapot_trans_green),
+            Box::new(castle), // Box::new(teapot_shiny),
+                              // Box::new(teapot_trans_green),
         ],
         vec![Box::new(main_light)],
         materials,
