@@ -17,6 +17,10 @@ impl Color {
         }
     }
 
+    pub fn is_num(&self) -> bool {
+        !self.color.is_nan() && self.color.is_finite()
+    }
+
     pub fn new_grey(c: f64) -> Self {
         Self {
             color: DVec3::new(c, c, c),

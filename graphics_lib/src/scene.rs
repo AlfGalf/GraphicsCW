@@ -152,7 +152,14 @@ impl Scene {
                             |(col_acc, depth_acc), ray| {
                                 let (col, depth) = self.calc_ray(*ray, Color::new_grey(1.), 0);
 
-                                (col_acc + col, depth_acc + depth)
+                                (
+                                    if col.is_num() { col_acc + col } else { col_acc },
+                                    if !depth.is_nan() && depth.is_finite() {
+                                        depth_acc + depth
+                                    } else {
+                                        depth_acc
+                                    },
+                                )
                             },
                         );
 
