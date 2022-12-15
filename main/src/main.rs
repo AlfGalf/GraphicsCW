@@ -135,13 +135,13 @@ fn main() {
         ])),
     );
 
-    let mut hole = Quadratic::new([1., 0., 0., 0., 2., 0., 0., 1., 0., -100.], 9);
+    let mut hole = Quadratic::new([1., 0., 0., 0., 1.8, 0., 0., 1., 0., -110.], 9);
     hole.apply_transform(&DAffine3::from_translation(DVec3::new(1., 0., -6.)));
 
     let cave = CSG::new(
         Subtract,
         Box::new(Plane::new(
-            DVec3::new(0., -3., -2.),
+            DVec3::new(0., -4., -2.),
             DVec3::new(0.1, 0.4, -1.),
             4,
         )),
@@ -150,7 +150,7 @@ fn main() {
 
     let land = Sphere::new(DVec3::new(-6., -10.2, 7.), 9.0, 11);
 
-    let mut hole_2 = Quadratic::new([1., 0., 0., 0., 2., 0., 0., 1., 0., -100.], 9);
+    let mut hole_2 = Quadratic::new([1., 0., 0., 0., 1.8, 0., 0., 1., 0., -110.], 9);
     hole_2.apply_transform(&DAffine3::from_translation(DVec3::new(1., 0., -6.)));
 
     let floor = CSG::new(
@@ -175,7 +175,7 @@ fn main() {
     teapot.apply_transform(&DAffine3::from_rotation_x(-PI / 2.));
     teapot.apply_transform(&DAffine3::from_rotation_z(-PI / 16.));
     teapot.apply_transform(&DAffine3::from_rotation_y(PI / 6.));
-    teapot.apply_transform(&DAffine3::from_translation(DVec3::new(4., -1., 9.)));
+    teapot.apply_transform(&DAffine3::from_translation(DVec3::new(3.5, -1., 9.)));
 
     let teapot = CSG::new(
         Intersection,
@@ -195,12 +195,12 @@ fn main() {
     teapot2.apply_transform(&DAffine3::from_rotation_x(-PI / 2.));
     teapot2.apply_transform(&DAffine3::from_rotation_z(-PI / 16.));
     teapot2.apply_transform(&DAffine3::from_rotation_y(2. * PI / 6.));
-    teapot2.apply_transform(&DAffine3::from_translation(DVec3::new(5., -1.0, 4.)));
+    teapot2.apply_transform(&DAffine3::from_translation(DVec3::new(4., -1.0, 4.)));
 
     let teapot2 = CSG::new(
         Intersection,
         Box::new(teapot2),
-        Box::new(Sphere::new(DVec3::new(5., 1., 6.), 100., 0)),
+        Box::new(Sphere::new(DVec3::new(5.4, 1., 6.), 100., 0)),
     );
 
     let mut teapot3 = PolyMesh::from_file(
@@ -274,14 +274,14 @@ fn main() {
             DVec3::new(0.5, 4., -15.),
             DVec3::new(-0.05, -0.2, 1.0),
             DVec3::new(0., 1., 0.),
-            1.4,
+            1.45,
             100,
             21.,
             0.2,
         )),
     );
 
-    let fb = scene.render(1200, 900);
+    let fb = scene.render(1000, 1000);
     // let fb = scene.render(400, 300);
 
     File::write_all(&mut file, &(fb.to_rgb_file(0.4))).unwrap();
